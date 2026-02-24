@@ -25,15 +25,22 @@ describe('computePingStats', () => {
     expect(result.avg).toBe(20);
     expect(result.min).toBe(10);
     expect(result.max).toBe(30);
-    // jitter = mean(|20-10|, |30-20|) = mean(10, 10) = 10
-    expect(result.jitter).toBe(10);
+    // jitter = stddev = sqrt(((10-20)^2 + (20-20)^2 + (30-20)^2) / 3) = sqrt(200/3) ≈ 8.16
+    expect(result.jitter).toBe(8.16);
     expect(result.samples).toEqual([10, 20, 30]);
   });
 
-  it('computes jitter as mean absolute consecutive difference', () => {
-    // |20-10| = 10, |15-20| = 5, |25-15| = 10 → mean = 25/3 ≈ 8.33
+  it('computes jitter as standard deviation of latency samples', () => {
+    // avg = 17.5, deviations: [-7.5, 2.5, -2.5, 7.5]
+    // squared: [56.25, 6.25, 6.25, 56.25] → sum = 125 → mean = 31.25
+    // stddev = sqrt(31.25) ≈ 5.59
     const result = computePingStats([10, 20, 15, 25]);
-    expect(result.jitter).toBe(8.33);
+    expect(result.jitter).toBe(5.59);
+  });
+
+  it('returns zero jitter for identical samples', () => {
+    const result = computePingStats([15, 15, 15, 15]);
+    expect(result.jitter).toBe(0);
   });
 
   it('rounds values to 2 decimal places', () => {

@@ -71,14 +71,11 @@ export function computePingStats(samples) {
   const min = Math.min(...samples);
   const max = Math.max(...samples);
 
-  // Jitter = mean absolute difference between consecutive samples (RFC 3550 style).
+  // Jitter = standard deviation of latency samples.
   let jitter = 0;
   if (samples.length > 1) {
-    let totalDiff = 0;
-    for (let i = 1; i < samples.length; i++) {
-      totalDiff += Math.abs(samples[i] - samples[i - 1]);
-    }
-    jitter = totalDiff / (samples.length - 1);
+    const squaredDiffs = samples.map((s) => (s - avg) ** 2);
+    jitter = Math.sqrt(squaredDiffs.reduce((a, b) => a + b, 0) / samples.length);
   }
 
   return {

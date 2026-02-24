@@ -7,6 +7,7 @@
 import { createConnectionIndicator } from './components/connection-indicator.js';
 import { createHistoryFilters } from './components/history-filters.js';
 import { createHistoryTable } from './components/history-table.js';
+import { createSpeedChart } from './components/speed-chart.js';
 import { initDatabase } from './services/database.js';
 
 // Initialize database
@@ -20,6 +21,13 @@ if (indicatorContainer) {
   indicator.subscribe();
 }
 
+// Initialize speed chart
+const chartContainer = document.getElementById('speed-chart-container');
+let speedChart = null;
+if (chartContainer) {
+  speedChart = createSpeedChart(chartContainer);
+}
+
 // Initialize history table
 const historyContainer = document.getElementById('history-table-container');
 if (historyContainer) {
@@ -31,10 +39,20 @@ if (historyContainer) {
     createHistoryFilters(filtersContainer, {
       onFilterChange: (filters) => {
         historyTable.setFilters(filters);
+        // Update chart with filtered results
+        if (speedChart) {
+          speedChart.update(historyTable.getResults());
+        }
       }
     });
   }
 
+  // Update chart with initial data
+  if (speedChart) {
+    speedChart.update(historyTable.getResults());
+  }
+
   // Make it globally accessible for refreshing after new tests
   window.historyTable = historyTable;
+  window.speedChart = speedChart;
 }

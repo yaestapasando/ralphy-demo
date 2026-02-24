@@ -31,6 +31,87 @@ let dbInstance = null;
  */
 
 /**
+ * Migrate database schema between versions
+ * Handles schema changes, new indexes, and data transformations
+ * @param {import('idb').IDBPDatabase} db - Database instance
+ * @param {number} oldVersion - Previous database version
+ * @param {number} newVersion - New database version
+ * @param {import('idb').IDBPTransaction} _transaction - Transaction object
+ */
+export function migrateSchema(db, oldVersion, newVersion, _transaction) {
+  console.log(`Migrating database from version ${oldVersion} to ${newVersion}`);
+
+  // Version 0 -> 1: Initial schema creation
+  if (oldVersion < 1) {
+    if (!db.objectStoreNames.contains(STORE_NAME)) {
+      const store = db.createObjectStore(STORE_NAME, {
+        keyPath: 'id'
+      });
+
+      // Create indexes for efficient querying
+      store.createIndex('timestamp', 'timestamp', { unique: false });
+      store.createIndex('connection_type', 'connection_type', { unique: false });
+      store.createIndex('download_mbps', 'download_mbps', { unique: false });
+      store.createIndex('upload_mbps', 'upload_mbps', { unique: false });
+
+      console.log(`Created object store: ${STORE_NAME} with indexes`);
+    }
+  }
+
+  // Future migration examples (commented out for reference):
+
+  // Version 1 -> 2: Add new index or modify existing data
+  // if (oldVersion < 2 && newVersion >= 2) {
+  //   const store = transaction.objectStore(STORE_NAME);
+  //
+  //   // Add a new index
+  //   if (!store.indexNames.contains('ping_ms')) {
+  //     store.createIndex('ping_ms', 'ping_ms', { unique: false });
+  //     console.log('Added ping_ms index');
+  //   }
+  // }
+
+  // Version 2 -> 3: Data transformation example
+  // if (oldVersion < 3 && newVersion >= 3) {
+  //   const store = transaction.objectStore(STORE_NAME);
+  //
+  //   // Migrate all existing records
+  //   const cursor = await store.openCursor();
+  //   while (cursor) {
+  //     const record = cursor.value;
+  //
+  //     // Transform data (e.g., rename field, add default value)
+  //     if (!record.new_field) {
+  //       record.new_field = 'default_value';
+  //       await cursor.update(record);
+  //     }
+  //
+  //     cursor = await cursor.continue();
+  //   }
+  //   console.log('Migrated data to version 3');
+  // }
+
+  // Version 3 -> 4: Remove old index and add new one
+  // if (oldVersion < 4 && newVersion >= 4) {
+  //   const store = transaction.objectStore(STORE_NAME);
+  //
+  //   // Remove deprecated index
+  //   if (store.indexNames.contains('old_index')) {
+  //     store.deleteIndex('old_index');
+  //     console.log('Removed old_index');
+  //   }
+  //
+  //   // Add new compound index
+  //   if (!store.indexNames.contains('connection_timestamp')) {
+  //     store.createIndex('connection_timestamp', ['connection_type', 'timestamp'], { unique: false });
+  //     console.log('Added connection_timestamp compound index');
+  //   }
+  // }
+
+  console.log(`Database migration completed: v${oldVersion} -> v${newVersion}`);
+}
+
+/**
  * Initialize and open the IndexedDB database
  * Creates the object store and indexes on first run or upgrade
  * Uses a singleton pattern to prevent multiple concurrent connections
@@ -42,21 +123,8 @@ export async function initDatabase() {
   }
 
   dbInstance = await openDB(DB_NAME, DB_VERSION, {
-    upgrade(db, _oldVersion, _newVersion, _transaction) {
-      // Create object store if it doesn't exist
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        const store = db.createObjectStore(STORE_NAME, {
-          keyPath: 'id'
-        });
-
-        // Create indexes for efficient querying
-        store.createIndex('timestamp', 'timestamp', { unique: false });
-        store.createIndex('connection_type', 'connection_type', { unique: false });
-        store.createIndex('download_mbps', 'download_mbps', { unique: false });
-        store.createIndex('upload_mbps', 'upload_mbps', { unique: false });
-
-        console.log(`Created object store: ${STORE_NAME}`);
-      }
+    upgrade(db, oldVersion, newVersion, transaction) {
+      migrateSchema(db, oldVersion, newVersion, transaction);
     },
     blocked() {
       console.warn('Database upgrade blocked by another tab');

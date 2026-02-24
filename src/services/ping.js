@@ -5,6 +5,10 @@
  * measures round-trip time for each, and computes statistics.
  */
 
+import {
+  SpeedTestError, ErrorCode, assertResponseOk, isTimeoutError,
+} from './errors.js';
+
 const DEFAULT_OPTIONS = {
   /** URL to ping (should respond fast with minimal payload). */
   url: '/ping',
@@ -23,20 +27,36 @@ const DEFAULT_OPTIONS = {
  * @param {number} timeout - Abort after this many ms.
  * @returns {Promise<number>} Round-trip time in milliseconds.
  */
-async function measureSinglePing(url, timeout) {
+async function measureSinglePing(url, timeout, externalSignal) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeout);
+
+  if (externalSignal) {
+    if (externalSignal.aborted) {
+      clearTimeout(timer);
+      controller.abort();
+    } else {
+      externalSignal.addEventListener('abort', () => controller.abort(), { once: true });
+    }
+  }
 
   // Append a cache-busting query param to avoid cached responses.
   const bustUrl = `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`;
 
   const start = performance.now();
   try {
-    await fetch(bustUrl, {
+    const response = await fetch(bustUrl, {
       method: 'HEAD',
       cache: 'no-store',
       signal: controller.signal,
     });
+
+    assertResponseOk(response, 'ping');
+  } catch (err) {
+    if (isTimeoutError(err, externalSignal)) {
+      throw new SpeedTestError(ErrorCode.TIMEOUT, undefined, { cause: err, phase: 'ping' });
+    }
+    throw err;
   } finally {
     clearTimeout(timer);
   }
@@ -123,7 +143,7 @@ export async function measureLatency(options = {}) {
     }
 
     try {
-      const rtt = await measureSinglePing(url, timeout);
+      const rtt = await measureSinglePing(url, timeout, signal);
       samples.push(rtt);
 
       if (onProgress) {
@@ -144,7 +164,14 @@ export async function measureLatency(options = {}) {
   }
 
   if (samples.length === 0) {
-    throw new Error('All ping requests failed. Check your network connection.');
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      throw new SpeedTestError(ErrorCode.OFFLINE, undefined, { phase: 'ping' });
+    }
+    throw new SpeedTestError(
+      ErrorCode.NETWORK_ERROR,
+      'All ping requests failed. Check your network connection.',
+      { phase: 'ping' },
+    );
   }
 
   return computePingStats(samples);

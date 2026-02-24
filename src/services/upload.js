@@ -6,6 +6,10 @@
  * the final speed estimate in Mbps.
  */
 
+import {
+  SpeedTestError, ErrorCode, assertResponseOk, isTimeoutError,
+} from './errors.js';
+
 /** Default progressive upload stages (bytes). */
 const DEFAULT_STAGES = [
   524_288,    // 512 KB
@@ -67,18 +71,26 @@ async function measureSingleUpload(url, bytes, timeout, signal) {
 
   const start = performance.now();
   try {
-    await fetch(bustUrl, {
+    const response = await fetch(bustUrl, {
       method: 'POST',
       cache: 'no-store',
       body: payload,
       signal: controller.signal,
     });
+
+    assertResponseOk(response, 'upload');
+
     const end = performance.now();
 
     const durationMs = end - start;
     const mbps = bytesToMbps(bytes, durationMs);
 
     return { bytes, durationMs, mbps };
+  } catch (err) {
+    if (isTimeoutError(err, signal)) {
+      throw new SpeedTestError(ErrorCode.TIMEOUT, undefined, { cause: err, phase: 'upload' });
+    }
+    throw err;
   } finally {
     clearTimeout(timer);
   }
@@ -158,7 +170,14 @@ export async function measureUploadSpeed(options = {}) {
   }
 
   if (results.length === 0) {
-    throw new Error('All upload stages failed. Check your network connection.');
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      throw new SpeedTestError(ErrorCode.OFFLINE, undefined, { phase: 'upload' });
+    }
+    throw new SpeedTestError(
+      ErrorCode.NETWORK_ERROR,
+      'All upload stages failed. Check your network connection.',
+      { phase: 'upload' },
+    );
   }
 
   const speedMbps = computeWeightedSpeed(results);

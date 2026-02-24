@@ -9,6 +9,7 @@
 import { measureLatency } from '../services/ping.js';
 import { measureDownloadSpeed } from '../services/download.js';
 import { measureUploadSpeed } from '../services/upload.js';
+import { classifyError, SpeedTestError } from '../services/errors.js';
 
 /** Test phases in execution order. */
 export const PHASES = ['ping', 'download', 'upload'];
@@ -92,7 +93,8 @@ export async function runSpeedTest(callbacks = {}, signal) {
     onComplete?.(result);
     return result;
   } catch (err) {
-    onError?.(err);
-    throw err;
+    const classified = err instanceof SpeedTestError ? err : classifyError(err);
+    onError?.(classified);
+    throw classified;
   }
 }

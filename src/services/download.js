@@ -7,6 +7,9 @@
  */
 
 import { buildDownloadUrl } from './server-config.js';
+import {
+  SpeedTestError, ErrorCode, assertResponseOk, isTimeoutError,
+} from './errors.js';
 
 /** Default progressive download stages (bytes). */
 const DEFAULT_STAGES = [
@@ -56,6 +59,8 @@ async function measureSingleDownload(url, expectedBytes, timeout, signal) {
       signal: controller.signal,
     });
 
+    assertResponseOk(response, 'download');
+
     // Consume the entire response body to ensure full download.
     const buffer = await response.arrayBuffer();
     const end = performance.now();
@@ -65,6 +70,11 @@ async function measureSingleDownload(url, expectedBytes, timeout, signal) {
     const mbps = bytesToMbps(bytes, durationMs);
 
     return { bytes, durationMs, mbps };
+  } catch (err) {
+    if (isTimeoutError(err, signal)) {
+      throw new SpeedTestError(ErrorCode.TIMEOUT, undefined, { cause: err, phase: 'download' });
+    }
+    throw err;
   } finally {
     clearTimeout(timer);
   }
@@ -147,7 +157,14 @@ export async function measureDownloadSpeed(options = {}) {
   }
 
   if (results.length === 0) {
-    throw new Error('All download stages failed. Check your network connection.');
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      throw new SpeedTestError(ErrorCode.OFFLINE, undefined, { phase: 'download' });
+    }
+    throw new SpeedTestError(
+      ErrorCode.NETWORK_ERROR,
+      'All download stages failed. Check your network connection.',
+      { phase: 'download' },
+    );
   }
 
   const speedMbps = computeWeightedSpeed(results);

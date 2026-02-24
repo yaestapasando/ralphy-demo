@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { runSpeedTest, PHASES } from '../src/components/speed-test.js';
+import { SpeedTestError, ErrorCode } from '../src/services/errors.js';
 
 // Mock the measurement services
 vi.mock('../src/services/ping.js', () => ({
@@ -159,37 +160,52 @@ describe('runSpeedTest', () => {
     );
   });
 
-  it('calls onError when ping phase fails', async () => {
-    const error = new Error('All ping requests failed.');
-    measureLatency.mockRejectedValue(error);
+  it('calls onError with SpeedTestError when ping phase fails', async () => {
+    measureLatency.mockRejectedValue(new Error('All ping requests failed.'));
     const onError = vi.fn();
 
-    await expect(runSpeedTest({ onError })).rejects.toThrow('All ping requests failed.');
-    expect(onError).toHaveBeenCalledWith(error);
+    await expect(runSpeedTest({ onError })).rejects.toThrow(SpeedTestError);
+    expect(onError).toHaveBeenCalledWith(expect.objectContaining({
+      name: 'SpeedTestError',
+      code: ErrorCode.NETWORK_ERROR,
+    }));
   });
 
-  it('calls onError when download phase fails', async () => {
-    const error = new Error('All download stages failed.');
-    measureDownloadSpeed.mockRejectedValue(error);
+  it('calls onError with SpeedTestError when download phase fails', async () => {
+    measureDownloadSpeed.mockRejectedValue(new Error('All download stages failed.'));
     const onError = vi.fn();
 
-    await expect(runSpeedTest({ onError })).rejects.toThrow('All download stages failed.');
-    expect(onError).toHaveBeenCalledWith(error);
+    await expect(runSpeedTest({ onError })).rejects.toThrow(SpeedTestError);
+    expect(onError).toHaveBeenCalledWith(expect.objectContaining({
+      name: 'SpeedTestError',
+      code: ErrorCode.NETWORK_ERROR,
+    }));
   });
 
-  it('calls onError when upload phase fails', async () => {
-    const error = new Error('All upload stages failed.');
-    measureUploadSpeed.mockRejectedValue(error);
+  it('calls onError with SpeedTestError when upload phase fails', async () => {
+    measureUploadSpeed.mockRejectedValue(new Error('All upload stages failed.'));
     const onError = vi.fn();
 
-    await expect(runSpeedTest({ onError })).rejects.toThrow('All upload stages failed.');
-    expect(onError).toHaveBeenCalledWith(error);
+    await expect(runSpeedTest({ onError })).rejects.toThrow(SpeedTestError);
+    expect(onError).toHaveBeenCalledWith(expect.objectContaining({
+      name: 'SpeedTestError',
+      code: ErrorCode.NETWORK_ERROR,
+    }));
+  });
+
+  it('passes through SpeedTestError from services without re-wrapping', async () => {
+    const original = new SpeedTestError(ErrorCode.OFFLINE, undefined, { phase: 'ping' });
+    measureLatency.mockRejectedValue(original);
+    const onError = vi.fn();
+
+    await expect(runSpeedTest({ onError })).rejects.toThrow(SpeedTestError);
+    expect(onError).toHaveBeenCalledWith(original);
   });
 
   it('does not call later phases if an early phase fails', async () => {
     measureLatency.mockRejectedValue(new Error('ping failed'));
 
-    await expect(runSpeedTest()).rejects.toThrow('ping failed');
+    await expect(runSpeedTest()).rejects.toThrow(SpeedTestError);
 
     expect(measureDownloadSpeed).not.toHaveBeenCalled();
     expect(measureUploadSpeed).not.toHaveBeenCalled();
@@ -206,12 +222,15 @@ describe('runSpeedTest', () => {
     });
   });
 
-  it('propagates AbortError from aborted signal', async () => {
+  it('classifies AbortError as SpeedTestError with ABORTED code', async () => {
     const abortError = new DOMException('Aborted', 'AbortError');
     measureLatency.mockRejectedValue(abortError);
     const onError = vi.fn();
 
-    await expect(runSpeedTest({ onError })).rejects.toThrow();
-    expect(onError).toHaveBeenCalledWith(abortError);
+    await expect(runSpeedTest({ onError })).rejects.toThrow(SpeedTestError);
+    expect(onError).toHaveBeenCalledWith(expect.objectContaining({
+      name: 'SpeedTestError',
+      code: ErrorCode.ABORTED,
+    }));
   });
 });

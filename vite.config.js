@@ -10,5 +10,10 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
+    environmentMatchGlobs: [
+      ['**/*indicator.test.js', 'happy-dom'],
+      ['**/*gauge.test.js', 'happy-dom'],
+      ['**/*screen.test.js', 'happy-dom'],
+    ],
   },
 });

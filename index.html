@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Test de Velocidad de Internet</title>
+  <link rel="stylesheet" href="/src/styles/history-table.css">
   <style>
     * {
       margin: 0;
@@ -219,6 +220,18 @@
       padding: 0 2rem;
     }
 
+    /* History Section */
+    .history-section {
+      margin-top: 3rem;
+    }
+
+    .history-section__title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1f2937;
+      margin-bottom: 1.5rem;
+    }
+
     /* Responsive */
     @media (max-width: 768px) {
       .app-header {
@@ -255,6 +268,15 @@
         margin: 1rem auto;
         padding: 0 1rem;
       }
+
+      .history-section {
+        margin-top: 2rem;
+      }
+
+      .history-section__title {
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+      }
     }
 
     @media (max-width: 400px) {
@@ -274,6 +296,12 @@
 
   <main class="app-main">
     <!-- Speed test components will be rendered here -->
+
+    <!-- History section -->
+    <section class="history-section">
+      <h2 class="history-section__title">Histórico de Pruebas</h2>
+      <div id="history-table-container"></div>
+    </section>
   </main>
 
   <script type="module" src="/src/main.js"></script>

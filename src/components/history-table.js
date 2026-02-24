@@ -212,6 +212,58 @@ function createEmptyState() {
 }
 
 /**
+ * Filter results by connection types and date range
+ * @param {Array} results - All results
+ * @param {Object} filters - Filter configuration
+ * @returns {Array} Filtered results
+ */
+function applyFilters(results, filters) {
+  let filtered = [...results];
+
+  // Filter by connection types
+  if (filters.connectionTypes && filters.connectionTypes.length > 0) {
+    filtered = filtered.filter(result => {
+      // Check if the result's connection type is in the filter list
+      if (filters.connectionTypes.includes(result.connection_type)) {
+        return true;
+      }
+      // For cellular connections, also check effective_type
+      if (result.connection_type === 'cellular' && result.effective_type) {
+        return filters.connectionTypes.includes(result.effective_type);
+      }
+      return false;
+    });
+  }
+
+  // Filter by date range
+  if (filters.dateFrom || filters.dateTo) {
+    filtered = filtered.filter(result => {
+      const resultDate = new Date(result.timestamp);
+
+      if (filters.dateFrom) {
+        const fromDate = new Date(filters.dateFrom);
+        fromDate.setHours(0, 0, 0, 0);
+        if (resultDate < fromDate) {
+          return false;
+        }
+      }
+
+      if (filters.dateTo) {
+        const toDate = new Date(filters.dateTo);
+        toDate.setHours(23, 59, 59, 999);
+        if (resultDate > toDate) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }
+
+  return filtered;
+}
+
+/**
  * Create and render a history table
  * @param {HTMLElement} container - Container element
  * @returns {Object} History table API
@@ -221,7 +273,13 @@ export function createHistoryTable(container) {
     throw new Error('Container element is required');
   }
 
-  let results = [];
+  let allResults = [];
+  let filteredResults = [];
+  let currentFilters = {
+    connectionTypes: [],
+    dateFrom: null,
+    dateTo: null
+  };
   let tableElement = null;
   let emptyStateElement = null;
 
@@ -233,9 +291,12 @@ export function createHistoryTable(container) {
     container.innerHTML = '';
 
     // Get results from database
-    results = await getAllResults();
+    allResults = await getAllResults();
 
-    if (results.length === 0) {
+    // Apply filters
+    filteredResults = applyFilters(allResults, currentFilters);
+
+    if (filteredResults.length === 0) {
       // Show empty state
       emptyStateElement = createEmptyState();
       container.appendChild(emptyStateElement);
@@ -258,7 +319,7 @@ export function createHistoryTable(container) {
     const tbody = document.createElement('tbody');
     tbody.className = 'history-table__body';
 
-    results.forEach(result => {
+    filteredResults.forEach(result => {
       const row = createTableRow(result);
       tbody.appendChild(row);
     });
@@ -276,11 +337,48 @@ export function createHistoryTable(container) {
   }
 
   /**
-   * Get current results
-   * @returns {Array} Current results
+   * Get current filtered results
+   * @returns {Array} Current filtered results
    */
   function getResults() {
-    return results;
+    return filteredResults;
+  }
+
+  /**
+   * Get all results without filters
+   * @returns {Array} All results
+   */
+  function getAllResultsUnfiltered() {
+    return allResults;
+  }
+
+  /**
+   * Set filters and re-render
+   * @param {Object} filters - Filter configuration
+   */
+  async function setFilters(filters) {
+    currentFilters = { ...currentFilters, ...filters };
+    await render();
+  }
+
+  /**
+   * Get current filters
+   * @returns {Object} Current filters
+   */
+  function getFilters() {
+    return { ...currentFilters };
+  }
+
+  /**
+   * Clear all filters and re-render
+   */
+  async function clearFilters() {
+    currentFilters = {
+      connectionTypes: [],
+      dateFrom: null,
+      dateTo: null
+    };
+    await render();
   }
 
   // Initial render
@@ -290,6 +388,10 @@ export function createHistoryTable(container) {
   return {
     render,
     refresh,
-    getResults
+    getResults,
+    getAllResultsUnfiltered,
+    setFilters,
+    getFilters,
+    clearFilters
   };
 }

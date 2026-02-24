@@ -548,4 +548,287 @@ describe('history-table component', () => {
       expect(rows[2].querySelector('.history-table__cell--download').textContent).toBe('40.00 Mbps');
     });
   });
+
+  // ===========================================================================
+  // Filtering
+  // ===========================================================================
+
+  describe('filtering', () => {
+    beforeEach(async () => {
+      // Add test data with different connection types and dates
+      await saveResult({
+        id: 'wifi-1',
+        timestamp: '2026-02-20T10:00:00Z',
+        download_mbps: 95.4,
+        upload_mbps: 42.1,
+        ping_ms: 12,
+        jitter_ms: 3.2,
+        connection_type: 'wifi',
+        effective_type: '4g',
+        downlink_mbps: 10,
+        rtt_ms: 50,
+        server_used: 'auto',
+        ip_address: 'redacted',
+        user_agent: 'Mozilla/5.0'
+      });
+
+      await saveResult({
+        id: 'cellular-1',
+        timestamp: '2026-02-22T14:00:00Z',
+        download_mbps: 50.5,
+        upload_mbps: 20.3,
+        ping_ms: 45,
+        jitter_ms: 8.1,
+        connection_type: 'cellular',
+        effective_type: '4g',
+        downlink_mbps: 10,
+        rtt_ms: 50,
+        server_used: 'auto',
+        ip_address: 'redacted',
+        user_agent: 'Mozilla/5.0'
+      });
+
+      await saveResult({
+        id: 'ethernet-1',
+        timestamp: '2026-02-25T09:00:00Z',
+        download_mbps: 120.7,
+        upload_mbps: 60.4,
+        ping_ms: 8,
+        jitter_ms: 1.5,
+        connection_type: 'ethernet',
+        effective_type: '4g',
+        downlink_mbps: 10,
+        rtt_ms: 50,
+        server_used: 'auto',
+        ip_address: 'redacted',
+        user_agent: 'Mozilla/5.0'
+      });
+    });
+
+    it('filters by single connection type', async () => {
+      const table = createHistoryTable(container);
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Initially should show all 3 results
+      let rows = container.querySelectorAll('.history-table__row');
+      expect(rows.length).toBe(3);
+
+      // Filter by wifi only
+      await table.setFilters({ connectionTypes: ['wifi'] });
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      rows = container.querySelectorAll('.history-table__row');
+      expect(rows.length).toBe(1);
+      expect(rows[0].getAttribute('data-id')).toBe('wifi-1');
+    });
+
+    it('filters by multiple connection types', async () => {
+      const table = createHistoryTable(container);
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Filter by wifi and ethernet
+      await table.setFilters({ connectionTypes: ['wifi', 'ethernet'] });
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      const rows = container.querySelectorAll('.history-table__row');
+      expect(rows.length).toBe(2);
+
+      const ids = Array.from(rows).map(row => row.getAttribute('data-id'));
+      expect(ids).toContain('wifi-1');
+      expect(ids).toContain('ethernet-1');
+      expect(ids).not.toContain('cellular-1');
+    });
+
+    it('filters by date from', async () => {
+      const table = createHistoryTable(container);
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Filter from Feb 23 onwards
+      await table.setFilters({ dateFrom: '2026-02-23' });
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      const rows = container.querySelectorAll('.history-table__row');
+      expect(rows.length).toBe(1);
+      expect(rows[0].getAttribute('data-id')).toBe('ethernet-1');
+    });
+
+    it('filters by date to', async () => {
+      const table = createHistoryTable(container);
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Filter up to Feb 21
+      await table.setFilters({ dateTo: '2026-02-21' });
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      const rows = container.querySelectorAll('.history-table__row');
+      expect(rows.length).toBe(1);
+      expect(rows[0].getAttribute('data-id')).toBe('wifi-1');
+    });
+
+    it('filters by date range', async () => {
+      const table = createHistoryTable(container);
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Filter from Feb 21 to Feb 23
+      await table.setFilters({
+        dateFrom: '2026-02-21',
+        dateTo: '2026-02-23'
+      });
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      const rows = container.querySelectorAll('.history-table__row');
+      expect(rows.length).toBe(1);
+      expect(rows[0].getAttribute('data-id')).toBe('cellular-1');
+    });
+
+    it('combines connection type and date range filters', async () => {
+      const table = createHistoryTable(container);
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Add another wifi result in the date range
+      await saveResult({
+        id: 'wifi-2',
+        timestamp: '2026-02-22T16:00:00Z',
+        download_mbps: 88.2,
+        upload_mbps: 38.5,
+        ping_ms: 15,
+        jitter_ms: 4.1,
+        connection_type: 'wifi',
+        effective_type: '4g',
+        downlink_mbps: 10,
+        rtt_ms: 50,
+        server_used: 'auto',
+        ip_address: 'redacted',
+        user_agent: 'Mozilla/5.0'
+      });
+
+      await table.refresh();
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Filter by wifi and date range
+      await table.setFilters({
+        connectionTypes: ['wifi'],
+        dateFrom: '2026-02-21',
+        dateTo: '2026-02-23'
+      });
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      const rows = container.querySelectorAll('.history-table__row');
+      expect(rows.length).toBe(1);
+      expect(rows[0].getAttribute('data-id')).toBe('wifi-2');
+    });
+
+    it('shows empty state when filters match no results', async () => {
+      const table = createHistoryTable(container);
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Filter by bluetooth (no results have this type)
+      await table.setFilters({ connectionTypes: ['bluetooth'] });
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      const emptyState = container.querySelector('.history-table__empty');
+      expect(emptyState).not.toBeNull();
+
+      const tableElement = container.querySelector('.history-table');
+      expect(tableElement).toBeNull();
+    });
+
+    it('clears filters correctly', async () => {
+      const table = createHistoryTable(container);
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Set filters
+      await table.setFilters({ connectionTypes: ['wifi'] });
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      let rows = container.querySelectorAll('.history-table__row');
+      expect(rows.length).toBe(1);
+
+      // Clear filters
+      await table.clearFilters();
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      rows = container.querySelectorAll('.history-table__row');
+      expect(rows.length).toBe(3);
+    });
+
+    it('getFilters returns current filter state', async () => {
+      const table = createHistoryTable(container);
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const initialFilters = table.getFilters();
+      expect(initialFilters).toEqual({
+        connectionTypes: [],
+        dateFrom: null,
+        dateTo: null
+      });
+
+      await table.setFilters({
+        connectionTypes: ['wifi', 'ethernet'],
+        dateFrom: '2026-02-20',
+        dateTo: '2026-02-25'
+      });
+
+      const updatedFilters = table.getFilters();
+      expect(updatedFilters.connectionTypes).toEqual(['wifi', 'ethernet']);
+      expect(updatedFilters.dateFrom).toBe('2026-02-20');
+      expect(updatedFilters.dateTo).toBe('2026-02-25');
+    });
+
+    it('getResults returns filtered results', async () => {
+      const table = createHistoryTable(container);
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      await table.setFilters({ connectionTypes: ['wifi'] });
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      const results = table.getResults();
+      expect(results.length).toBe(1);
+      expect(results[0].id).toBe('wifi-1');
+    });
+
+    it('getAllResultsUnfiltered returns all results regardless of filters', async () => {
+      const table = createHistoryTable(container);
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      await table.setFilters({ connectionTypes: ['wifi'] });
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      const filteredResults = table.getResults();
+      expect(filteredResults.length).toBe(1);
+
+      const allResults = table.getAllResultsUnfiltered();
+      expect(allResults.length).toBe(3);
+    });
+
+    it('filters cellular connections by effective_type', async () => {
+      // Add a 5G cellular result
+      await saveResult({
+        id: 'cellular-5g',
+        timestamp: '2026-02-23T10:00:00Z',
+        download_mbps: 150.5,
+        upload_mbps: 50.3,
+        ping_ms: 25,
+        jitter_ms: 5.1,
+        connection_type: 'cellular',
+        effective_type: '5g',
+        downlink_mbps: 10,
+        rtt_ms: 50,
+        server_used: 'auto',
+        ip_address: 'redacted',
+        user_agent: 'Mozilla/5.0'
+      });
+
+      const table = createHistoryTable(container);
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Filter by 5g effective type
+      await table.setFilters({ connectionTypes: ['5g'] });
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      const rows = container.querySelectorAll('.history-table__row');
+      expect(rows.length).toBe(1);
+      expect(rows[0].getAttribute('data-id')).toBe('cellular-5g');
+    });
+  });
 });

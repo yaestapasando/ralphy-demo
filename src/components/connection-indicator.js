@@ -3,10 +3,12 @@
  *
  * Renders an icon and label showing the current connection type (Wi-Fi,
  * cellular, ethernet, etc.) in the app header. Updates in real-time when
- * the connection changes.
+ * the connection changes. Includes a tooltip explaining browser support
+ * limitations.
  */
 
 import { onConnectionChange } from '../services/network-detection.js';
+import { parseBrowserInfo } from '../services/network-fallback.js';
 
 /**
  * Connection type display configuration.
@@ -138,6 +140,32 @@ export function determineDisplayType(connectionInfo) {
 }
 
 /**
+ * Gets the browser support message based on browser info and API support.
+ *
+ * @param {boolean} isSupported - Whether Network Information API is supported.
+ * @returns {string} Tooltip message explaining support status.
+ */
+export function getBrowserSupportMessage(isSupported) {
+  const browserInfo = parseBrowserInfo();
+
+  if (isSupported) {
+    return 'Detección de red en tiempo real habilitada. El tipo de conexión se actualiza automáticamente cuando cambias de red.';
+  }
+
+  // Browser-specific messages for unsupported browsers
+  if (browserInfo.browser === 'firefox') {
+    return 'Firefox no soporta la API de detección de red. El tipo de conexión se detectará mediante análisis de velocidad después de ejecutar un test.';
+  }
+
+  if (browserInfo.browser === 'safari') {
+    return 'Safari no soporta la API de detección de red por motivos de privacidad. El tipo de conexión se detectará mediante análisis de velocidad después de ejecutar un test.';
+  }
+
+  // Generic fallback message
+  return 'Tu navegador no soporta la detección automática de red. El tipo de conexión se detectará mediante análisis de velocidad después de ejecutar un test.';
+}
+
+/**
  * Creates and manages the connection indicator component.
  *
  * @param {HTMLElement} container - DOM element to render the indicator into.
@@ -156,8 +184,28 @@ export function createConnectionIndicator(container) {
   const label = document.createElement('span');
   label.className = 'connection-indicator__label';
 
+  // Info icon for tooltip
+  const infoIcon = document.createElement('span');
+  infoIcon.className = 'connection-indicator__info';
+  infoIcon.setAttribute('aria-label', 'Información sobre detección de red');
+  infoIcon.setAttribute('role', 'button');
+  infoIcon.setAttribute('tabindex', '0');
+  infoIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="10"></circle>
+    <line x1="12" y1="16" x2="12" y2="12"></line>
+    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+  </svg>`;
+
+  // Tooltip element
+  const tooltip = document.createElement('div');
+  tooltip.className = 'connection-indicator__tooltip';
+  tooltip.setAttribute('role', 'tooltip');
+  tooltip.style.display = 'none';
+
   root.appendChild(iconContainer);
   root.appendChild(label);
+  root.appendChild(infoIcon);
+  root.appendChild(tooltip);
   container.appendChild(root);
 
   /**
@@ -175,7 +223,54 @@ export function createConnectionIndicator(container) {
 
     // Update CSS class for styling
     root.className = `connection-indicator connection-indicator--${displayType}`;
+
+    // Update tooltip content based on API support
+    const tooltipMessage = getBrowserSupportMessage(connectionInfo.supported);
+    tooltip.textContent = tooltipMessage;
   }
+
+  /**
+   * Shows the tooltip.
+   */
+  function showTooltip() {
+    tooltip.style.display = 'block';
+    infoIcon.setAttribute('aria-expanded', 'true');
+  }
+
+  /**
+   * Hides the tooltip.
+   */
+  function hideTooltip() {
+    tooltip.style.display = 'none';
+    infoIcon.setAttribute('aria-expanded', 'false');
+  }
+
+  /**
+   * Toggles the tooltip visibility.
+   */
+  function toggleTooltip() {
+    if (tooltip.style.display === 'none') {
+      showTooltip();
+    } else {
+      hideTooltip();
+    }
+  }
+
+  // Tooltip interaction handlers
+  infoIcon.addEventListener('click', toggleTooltip);
+  infoIcon.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      toggleTooltip();
+    }
+  });
+
+  // Close tooltip when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!root.contains(e.target)) {
+      hideTooltip();
+    }
+  });
 
   /**
    * Subscribes to connection changes and updates the indicator automatically.
@@ -189,6 +284,7 @@ export function createConnectionIndicator(container) {
 
   /** Removes the indicator from the DOM and cleans up listeners. */
   function destroy() {
+    hideTooltip();
     root.remove();
   }
 

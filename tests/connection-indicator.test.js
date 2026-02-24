@@ -7,8 +7,10 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   createConnectionIndicator,
   determineDisplayType,
+  getBrowserSupportMessage,
 } from '../src/components/connection-indicator.js';
 import * as networkDetection from '../src/services/network-detection.js';
+import * as networkFallback from '../src/services/network-fallback.js';
 
 describe('determineDisplayType', () => {
   it('should return "unknown" when API is not supported', () => {
@@ -441,5 +443,303 @@ describe('createConnectionIndicator', () => {
     expect(label.textContent).toBe('2G lenta');
 
     indicator.destroy();
+  });
+});
+
+describe('getBrowserSupportMessage', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('should return supported message when API is available', () => {
+    vi.spyOn(networkFallback, 'parseBrowserInfo').mockReturnValue({
+      browser: 'chrome',
+      mobile: false,
+      os: 'windows',
+    });
+
+    const message = getBrowserSupportMessage(true);
+    expect(message).toContain('Detección de red en tiempo real habilitada');
+    expect(message).toContain('actualiza automáticamente');
+  });
+
+  it('should return Firefox-specific message when browser is Firefox', () => {
+    vi.spyOn(networkFallback, 'parseBrowserInfo').mockReturnValue({
+      browser: 'firefox',
+      mobile: false,
+      os: 'windows',
+    });
+
+    const message = getBrowserSupportMessage(false);
+    expect(message).toContain('Firefox no soporta');
+    expect(message).toContain('análisis de velocidad');
+  });
+
+  it('should return Safari-specific message when browser is Safari', () => {
+    vi.spyOn(networkFallback, 'parseBrowserInfo').mockReturnValue({
+      browser: 'safari',
+      mobile: false,
+      os: 'macos',
+    });
+
+    const message = getBrowserSupportMessage(false);
+    expect(message).toContain('Safari no soporta');
+    expect(message).toContain('motivos de privacidad');
+  });
+
+  it('should return generic fallback message for unknown browsers', () => {
+    vi.spyOn(networkFallback, 'parseBrowserInfo').mockReturnValue({
+      browser: 'unknown',
+      mobile: false,
+      os: 'linux',
+    });
+
+    const message = getBrowserSupportMessage(false);
+    expect(message).toContain('Tu navegador no soporta');
+    expect(message).toContain('detección automática de red');
+  });
+});
+
+describe('tooltip functionality', () => {
+  let container;
+
+  beforeEach(() => {
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('should render info icon and tooltip elements', () => {
+    const indicator = createConnectionIndicator(container);
+
+    const infoIcon = container.querySelector('.connection-indicator__info');
+    expect(infoIcon).toBeTruthy();
+    expect(infoIcon.getAttribute('role')).toBe('button');
+    expect(infoIcon.getAttribute('tabindex')).toBe('0');
+    expect(infoIcon.querySelector('svg')).toBeTruthy();
+
+    const tooltip = container.querySelector('.connection-indicator__tooltip');
+    expect(tooltip).toBeTruthy();
+    expect(tooltip.getAttribute('role')).toBe('tooltip');
+    expect(tooltip.style.display).toBe('none');
+
+    indicator.destroy();
+  });
+
+  it('should update tooltip content when connection info changes', () => {
+    vi.spyOn(networkFallback, 'parseBrowserInfo').mockReturnValue({
+      browser: 'chrome',
+      mobile: false,
+      os: 'windows',
+    });
+
+    const indicator = createConnectionIndicator(container);
+
+    indicator.update({
+      supported: true,
+      type: 'wifi',
+      effectiveType: null,
+      downlink: 50,
+      rtt: 20,
+    });
+
+    const tooltip = container.querySelector('.connection-indicator__tooltip');
+    expect(tooltip.textContent).toContain('Detección de red en tiempo real habilitada');
+
+    indicator.destroy();
+  });
+
+  it('should show different tooltip message for unsupported browsers', () => {
+    vi.spyOn(networkFallback, 'parseBrowserInfo').mockReturnValue({
+      browser: 'firefox',
+      mobile: false,
+      os: 'linux',
+    });
+
+    const indicator = createConnectionIndicator(container);
+
+    indicator.update({
+      supported: false,
+      type: null,
+      effectiveType: null,
+      downlink: null,
+      rtt: null,
+    });
+
+    const tooltip = container.querySelector('.connection-indicator__tooltip');
+    expect(tooltip.textContent).toContain('Firefox no soporta');
+
+    indicator.destroy();
+  });
+
+  it('should show tooltip when info icon is clicked', () => {
+    const indicator = createConnectionIndicator(container);
+
+    indicator.update({
+      supported: true,
+      type: 'wifi',
+      effectiveType: null,
+      downlink: 50,
+      rtt: 20,
+    });
+
+    const infoIcon = container.querySelector('.connection-indicator__info');
+    const tooltip = container.querySelector('.connection-indicator__tooltip');
+
+    expect(tooltip.style.display).toBe('none');
+
+    infoIcon.click();
+
+    expect(tooltip.style.display).toBe('block');
+    expect(infoIcon.getAttribute('aria-expanded')).toBe('true');
+
+    indicator.destroy();
+  });
+
+  it('should hide tooltip when info icon is clicked again', () => {
+    const indicator = createConnectionIndicator(container);
+
+    indicator.update({
+      supported: true,
+      type: 'wifi',
+      effectiveType: null,
+      downlink: 50,
+      rtt: 20,
+    });
+
+    const infoIcon = container.querySelector('.connection-indicator__info');
+    const tooltip = container.querySelector('.connection-indicator__tooltip');
+
+    infoIcon.click();
+    expect(tooltip.style.display).toBe('block');
+
+    infoIcon.click();
+    expect(tooltip.style.display).toBe('none');
+    expect(infoIcon.getAttribute('aria-expanded')).toBe('false');
+
+    indicator.destroy();
+  });
+
+  it('should show tooltip when Enter key is pressed on info icon', () => {
+    const indicator = createConnectionIndicator(container);
+
+    indicator.update({
+      supported: true,
+      type: 'wifi',
+      effectiveType: null,
+      downlink: 50,
+      rtt: 20,
+    });
+
+    const infoIcon = container.querySelector('.connection-indicator__info');
+    const tooltip = container.querySelector('.connection-indicator__tooltip');
+
+    const event = new KeyboardEvent('keydown', { key: 'Enter' });
+    infoIcon.dispatchEvent(event);
+
+    expect(tooltip.style.display).toBe('block');
+
+    indicator.destroy();
+  });
+
+  it('should show tooltip when Space key is pressed on info icon', () => {
+    const indicator = createConnectionIndicator(container);
+
+    indicator.update({
+      supported: true,
+      type: 'wifi',
+      effectiveType: null,
+      downlink: 50,
+      rtt: 20,
+    });
+
+    const infoIcon = container.querySelector('.connection-indicator__info');
+    const tooltip = container.querySelector('.connection-indicator__tooltip');
+
+    const event = new KeyboardEvent('keydown', { key: ' ' });
+    infoIcon.dispatchEvent(event);
+
+    expect(tooltip.style.display).toBe('block');
+
+    indicator.destroy();
+  });
+
+  it('should hide tooltip when clicking outside the indicator', () => {
+    const indicator = createConnectionIndicator(container);
+
+    indicator.update({
+      supported: true,
+      type: 'wifi',
+      effectiveType: null,
+      downlink: 50,
+      rtt: 20,
+    });
+
+    const infoIcon = container.querySelector('.connection-indicator__info');
+    const tooltip = container.querySelector('.connection-indicator__tooltip');
+
+    // Show tooltip
+    infoIcon.click();
+    expect(tooltip.style.display).toBe('block');
+
+    // Click outside
+    document.body.click();
+    expect(tooltip.style.display).toBe('none');
+
+    indicator.destroy();
+  });
+
+  it('should not hide tooltip when clicking inside the indicator', () => {
+    const indicator = createConnectionIndicator(container);
+
+    indicator.update({
+      supported: true,
+      type: 'wifi',
+      effectiveType: null,
+      downlink: 50,
+      rtt: 20,
+    });
+
+    const infoIcon = container.querySelector('.connection-indicator__info');
+    const tooltip = container.querySelector('.connection-indicator__tooltip');
+    const root = container.querySelector('.connection-indicator');
+
+    // Show tooltip
+    infoIcon.click();
+    expect(tooltip.style.display).toBe('block');
+
+    // Click inside the indicator (but not on info icon)
+    root.click();
+    expect(tooltip.style.display).toBe('block');
+
+    indicator.destroy();
+  });
+
+  it('should hide tooltip when indicator is destroyed', () => {
+    const indicator = createConnectionIndicator(container);
+
+    indicator.update({
+      supported: true,
+      type: 'wifi',
+      effectiveType: null,
+      downlink: 50,
+      rtt: 20,
+    });
+
+    const infoIcon = container.querySelector('.connection-indicator__info');
+    infoIcon.click();
+
+    const tooltip = container.querySelector('.connection-indicator__tooltip');
+    expect(tooltip.style.display).toBe('block');
+
+    indicator.destroy();
+
+    // Indicator and tooltip should be removed from DOM
+    const tooltipAfterDestroy = container.querySelector('.connection-indicator__tooltip');
+    expect(tooltipAfterDestroy).toBeNull();
   });
 });

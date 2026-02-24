@@ -38,6 +38,7 @@
 
     /* Connection Indicator */
     .connection-indicator {
+      position: relative;
       display: flex;
       align-items: center;
       gap: 0.5rem;
@@ -58,6 +59,63 @@
       font-size: 0.875rem;
       font-weight: 500;
       color: #374151;
+    }
+
+    .connection-indicator__info {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #9ca3af;
+      cursor: pointer;
+      transition: color 0.2s ease;
+      outline: none;
+    }
+
+    .connection-indicator__info:hover,
+    .connection-indicator__info:focus {
+      color: #6b7280;
+    }
+
+    .connection-indicator__info:focus-visible {
+      outline: 2px solid #3b82f6;
+      outline-offset: 2px;
+      border-radius: 0.25rem;
+    }
+
+    .connection-indicator__tooltip {
+      position: absolute;
+      top: calc(100% + 0.5rem);
+      right: 0;
+      width: 300px;
+      padding: 0.75rem;
+      background: #1f2937;
+      color: #f9fafb;
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      border-radius: 0.5rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+      animation: tooltipFadeIn 0.2s ease;
+    }
+
+    .connection-indicator__tooltip::before {
+      content: '';
+      position: absolute;
+      bottom: 100%;
+      right: 1rem;
+      border: 0.5rem solid transparent;
+      border-bottom-color: #1f2937;
+    }
+
+    @keyframes tooltipFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-0.5rem);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     /* Connection type specific styles */
@@ -182,9 +240,28 @@
         font-size: 0.8125rem;
       }
 
+      .connection-indicator__tooltip {
+        width: 280px;
+        right: 0;
+        left: auto;
+      }
+
+      .connection-indicator__tooltip::before {
+        right: 1rem;
+        left: auto;
+      }
+
       .app-main {
         margin: 1rem auto;
         padding: 0 1rem;
+      }
+    }
+
+    @media (max-width: 400px) {
+      .connection-indicator__tooltip {
+        width: calc(100vw - 2rem);
+        right: 0;
+        left: auto;
       }
     }
   </style>

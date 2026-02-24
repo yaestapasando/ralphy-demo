@@ -10,10 +10,12 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
+    setupFiles: ['./tests/setup-indexeddb.js'],
     environmentMatchGlobs: [
       ['**/*indicator.test.js', 'happy-dom'],
       ['**/*gauge.test.js', 'happy-dom'],
       ['**/*screen.test.js', 'happy-dom'],
+      ['**/database.test.js', 'happy-dom'],
     ],
   },
 });

@@ -20,6 +20,8 @@ export default [
         DOMException: 'readonly',
         Response: 'readonly',
         crypto: 'readonly',
+        requestAnimationFrame: 'readonly',
+        cancelAnimationFrame: 'readonly',
       },
     },
     rules: {

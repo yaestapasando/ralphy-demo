@@ -10,43 +10,60 @@ import 'chartjs-adapter-date-fns';
 Chart.register(LineController, LineElement, PointElement, LinearScale, TimeScale, Title, Tooltip, Legend, Filler);
 
 /**
+ * Metric configuration for different chart types
+ */
+const METRICS = {
+  download: {
+    label: 'Descarga',
+    color: '#3b82f6',
+    bgColor: 'rgba(59, 130, 246, 0.1)',
+    dataKey: 'download_mbps',
+    unit: 'Mbps',
+    yAxisLabel: 'Velocidad (Mbps)'
+  },
+  upload: {
+    label: 'Subida',
+    color: '#10b981',
+    bgColor: 'rgba(16, 185, 129, 0.1)',
+    dataKey: 'upload_mbps',
+    unit: 'Mbps',
+    yAxisLabel: 'Velocidad (Mbps)'
+  },
+  ping: {
+    label: 'Ping',
+    color: '#f59e0b',
+    bgColor: 'rgba(245, 158, 11, 0.1)',
+    dataKey: 'ping_ms',
+    unit: 'ms',
+    yAxisLabel: 'Latencia (ms)'
+  }
+};
+
+/**
  * Prepare chart data from speed test results
  * @param {Array} results - Speed test results sorted by timestamp
+ * @param {string} metric - Metric to display ('download', 'upload', or 'ping')
  * @returns {Object} Chart.js data object
  */
-function prepareChartData(results) {
+function prepareChartData(results, metric = 'download') {
   const sortedResults = [...results].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  const metricConfig = METRICS[metric];
 
   const labels = sortedResults.map(r => new Date(r.timestamp));
-  const downloadData = sortedResults.map(r => r.download_mbps);
-  const uploadData = sortedResults.map(r => r.upload_mbps);
+  const data = sortedResults.map(r => r[metricConfig.dataKey]);
 
   return {
     labels,
     datasets: [
       {
-        label: 'Descarga',
-        data: downloadData,
-        borderColor: '#3b82f6',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        label: metricConfig.label,
+        data,
+        borderColor: metricConfig.color,
+        backgroundColor: metricConfig.bgColor,
         borderWidth: 2,
         pointRadius: 4,
         pointHoverRadius: 6,
-        pointBackgroundColor: '#3b82f6',
-        pointBorderColor: '#fff',
-        pointBorderWidth: 2,
-        tension: 0.3,
-        fill: true
-      },
-      {
-        label: 'Subida',
-        data: uploadData,
-        borderColor: '#10b981',
-        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-        borderWidth: 2,
-        pointRadius: 4,
-        pointHoverRadius: 6,
-        pointBackgroundColor: '#10b981',
+        pointBackgroundColor: metricConfig.color,
         pointBorderColor: '#fff',
         pointBorderWidth: 2,
         tension: 0.3,
@@ -58,9 +75,13 @@ function prepareChartData(results) {
 
 /**
  * Get chart configuration
+ * @param {Object} data - Chart data
+ * @param {string} metric - Current metric being displayed
  * @returns {Object} Chart.js configuration object
  */
-function getChartConfig(data) {
+function getChartConfig(data, metric = 'download') {
+  const metricConfig = METRICS[metric];
+
   return {
     type: 'line',
     data,
@@ -108,7 +129,7 @@ function getChartConfig(data) {
             label: (context) => {
               const label = context.dataset.label || '';
               const value = context.parsed.y;
-              return `${label}: ${value.toFixed(2)} Mbps`;
+              return `${label}: ${value.toFixed(2)} ${metricConfig.unit}`;
             }
           }
         },
@@ -153,7 +174,7 @@ function getChartConfig(data) {
           beginAtZero: true,
           title: {
             display: true,
-            text: 'Velocidad (Mbps)',
+            text: metricConfig.yAxisLabel,
             font: {
               size: 13,
               weight: 'bold'
@@ -167,6 +188,43 @@ function getChartConfig(data) {
       }
     }
   };
+}
+
+/**
+ * Create metric selector UI
+ * @param {string} selectedMetric - Currently selected metric
+ * @param {Function} onChange - Callback when metric changes
+ * @returns {HTMLDivElement} Metric selector element
+ */
+function createMetricSelector(selectedMetric, onChange) {
+  const selector = document.createElement('div');
+  selector.className = 'speed-chart__selector';
+
+  const label = document.createElement('label');
+  label.className = 'speed-chart__selector-label';
+  label.textContent = 'Métrica:';
+  label.setAttribute('for', 'metric-selector');
+
+  const select = document.createElement('select');
+  select.className = 'speed-chart__selector-select';
+  select.id = 'metric-selector';
+
+  Object.entries(METRICS).forEach(([key, config]) => {
+    const option = document.createElement('option');
+    option.value = key;
+    option.textContent = config.label;
+    option.selected = key === selectedMetric;
+    select.appendChild(option);
+  });
+
+  select.addEventListener('change', (e) => {
+    onChange(e.target.value);
+  });
+
+  selector.appendChild(label);
+  selector.appendChild(select);
+
+  return selector;
 }
 
 /**
@@ -197,19 +255,30 @@ export function createSpeedChart(container) {
   let chart = null;
   let canvasElement = null;
   let emptyStateElement = null;
+  let selectorElement = null;
+  let currentMetric = 'download';
+  let currentResults = null;
 
   /**
-   * Update the chart with new results
-   * @param {Array} results - Speed test results
+   * Render the chart with current metric and results
    */
-  function update(results) {
-    // Clear container
-    container.innerHTML = '';
+  function renderChart() {
+    // Clear chart area (preserve selector if it exists)
+    const chartArea = container.querySelector('.speed-chart__chart-area');
+    if (chartArea) {
+      chartArea.innerHTML = '';
+    } else {
+      container.innerHTML = '';
+    }
 
     // If no results or less than 2 results, show empty state
-    if (!results || results.length < 2) {
+    if (!currentResults || currentResults.length < 2) {
       emptyStateElement = createEmptyState();
-      container.appendChild(emptyStateElement);
+      if (chartArea) {
+        chartArea.appendChild(emptyStateElement);
+      } else {
+        container.appendChild(emptyStateElement);
+      }
 
       // Destroy existing chart if any
       if (chart) {
@@ -219,16 +288,33 @@ export function createSpeedChart(container) {
       return;
     }
 
+    // Create selector if it doesn't exist
+    if (!selectorElement) {
+      selectorElement = createMetricSelector(currentMetric, (newMetric) => {
+        currentMetric = newMetric;
+        renderChart();
+      });
+      container.insertBefore(selectorElement, container.firstChild);
+    }
+
+    // Get or create chart area
+    let renderChartArea = container.querySelector('.speed-chart__chart-area');
+    if (!renderChartArea) {
+      renderChartArea = document.createElement('div');
+      renderChartArea.className = 'speed-chart__chart-area';
+      container.appendChild(renderChartArea);
+    }
+
     // Create canvas element if it doesn't exist
     if (!canvasElement || !canvasElement.isConnected) {
       canvasElement = document.createElement('canvas');
       canvasElement.className = 'speed-chart__canvas';
-      container.appendChild(canvasElement);
+      renderChartArea.appendChild(canvasElement);
     }
 
     // Get chart data and config
-    const data = prepareChartData(results);
-    const config = getChartConfig(data);
+    const data = prepareChartData(currentResults, currentMetric);
+    const config = getChartConfig(data, currentMetric);
 
     // Destroy existing chart if any
     if (chart) {
@@ -237,6 +323,35 @@ export function createSpeedChart(container) {
 
     // Create new chart
     chart = new Chart(canvasElement, config);
+  }
+
+  /**
+   * Update the chart with new results
+   * @param {Array} results - Speed test results
+   */
+  function update(results) {
+    currentResults = results;
+    renderChart();
+  }
+
+  /**
+   * Change the displayed metric
+   * @param {string} metric - Metric to display ('download', 'upload', or 'ping')
+   */
+  function setMetric(metric) {
+    if (!METRICS[metric]) {
+      throw new Error(`Invalid metric: ${metric}`);
+    }
+    currentMetric = metric;
+    renderChart();
+  }
+
+  /**
+   * Get the current metric
+   * @returns {string} Current metric
+   */
+  function getMetric() {
+    return currentMetric;
   }
 
   /**
@@ -255,6 +370,11 @@ export function createSpeedChart(container) {
       emptyStateElement.remove();
       emptyStateElement = null;
     }
+    if (selectorElement) {
+      selectorElement.remove();
+      selectorElement = null;
+    }
+    currentResults = null;
   }
 
   /**
@@ -269,6 +389,8 @@ export function createSpeedChart(container) {
   return {
     update,
     destroy,
-    getChart
+    getChart,
+    setMetric,
+    getMetric
   };
 }

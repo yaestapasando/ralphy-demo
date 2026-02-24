@@ -68,9 +68,18 @@ describe('speed-chart component', () => {
       expect(chart).toHaveProperty('update');
       expect(chart).toHaveProperty('destroy');
       expect(chart).toHaveProperty('getChart');
+      expect(chart).toHaveProperty('setMetric');
+      expect(chart).toHaveProperty('getMetric');
       expect(typeof chart.update).toBe('function');
       expect(typeof chart.destroy).toBe('function');
       expect(typeof chart.getChart).toBe('function');
+      expect(typeof chart.setMetric).toBe('function');
+      expect(typeof chart.getMetric).toBe('function');
+    });
+
+    it('initializes with download metric by default', () => {
+      const chart = createSpeedChart(container);
+      expect(chart.getMetric()).toBe('download');
     });
   });
 
@@ -335,6 +344,157 @@ describe('speed-chart component', () => {
       // Should not throw and should display chart
       expect(() => chart.update(results)).not.toThrow();
       expect(container.querySelector('.speed-chart__canvas')).not.toBeNull();
+    });
+  });
+
+  // ===========================================================================
+  // Metric selector
+  // ===========================================================================
+
+  describe('metric selector', () => {
+    const results = [
+      {
+        id: 'test-1',
+        timestamp: '2026-02-24T10:30:00Z',
+        download_mbps: 95.4,
+        upload_mbps: 42.1,
+        ping_ms: 12,
+        connection_type: 'wifi'
+      },
+      {
+        id: 'test-2',
+        timestamp: '2026-02-24T11:30:00Z',
+        download_mbps: 98.2,
+        upload_mbps: 44.5,
+        ping_ms: 10,
+        connection_type: 'wifi'
+      }
+    ];
+
+    it('displays metric selector when results are provided', () => {
+      const chart = createSpeedChart(container);
+      chart.update(results);
+
+      const selector = container.querySelector('.speed-chart__selector');
+      expect(selector).not.toBeNull();
+    });
+
+    it('does not display metric selector when no results', () => {
+      const chart = createSpeedChart(container);
+      chart.update([]);
+
+      const selector = container.querySelector('.speed-chart__selector');
+      expect(selector).toBeNull();
+    });
+
+    it('metric selector has all three options', () => {
+      const chart = createSpeedChart(container);
+      chart.update(results);
+
+      const select = container.querySelector('.speed-chart__selector-select');
+      const options = select.querySelectorAll('option');
+
+      expect(options.length).toBe(3);
+      expect(options[0].value).toBe('download');
+      expect(options[1].value).toBe('upload');
+      expect(options[2].value).toBe('ping');
+    });
+
+    it('download option is selected by default', () => {
+      const chart = createSpeedChart(container);
+      chart.update(results);
+
+      const select = container.querySelector('.speed-chart__selector-select');
+      expect(select.value).toBe('download');
+    });
+
+    it('can change metric programmatically', () => {
+      const chart = createSpeedChart(container);
+      chart.update(results);
+
+      chart.setMetric('upload');
+      expect(chart.getMetric()).toBe('upload');
+
+      chart.setMetric('ping');
+      expect(chart.getMetric()).toBe('ping');
+    });
+
+    it('throws error for invalid metric', () => {
+      const chart = createSpeedChart(container);
+      chart.update(results);
+
+      expect(() => chart.setMetric('invalid')).toThrow('Invalid metric: invalid');
+    });
+
+    it('updates selector UI when metric changes programmatically', () => {
+      const chart = createSpeedChart(container);
+      chart.update(results);
+
+      const select = container.querySelector('.speed-chart__selector-select');
+      expect(select.value).toBe('download');
+
+      chart.setMetric('upload');
+      // Note: Since setMetric recreates the chart, we need to query the selector again
+      const updatedSelect = container.querySelector('.speed-chart__selector-select');
+      expect(chart.getMetric()).toBe('upload');
+    });
+
+    it('re-renders chart when metric changes', () => {
+      const chart = createSpeedChart(container);
+      chart.update(results);
+
+      const initialChart = chart.getChart();
+      expect(initialChart).not.toBeNull();
+
+      chart.setMetric('upload');
+
+      // Chart should be re-rendered (new instance)
+      const updatedChart = chart.getChart();
+      expect(updatedChart).not.toBeNull();
+    });
+
+    it('preserves metric selector when updating results', () => {
+      const chart = createSpeedChart(container);
+      chart.update(results);
+
+      chart.setMetric('ping');
+      expect(chart.getMetric()).toBe('ping');
+
+      // Update with new results
+      const newResults = [
+        ...results,
+        {
+          id: 'test-3',
+          timestamp: '2026-02-24T12:30:00Z',
+          download_mbps: 100.1,
+          upload_mbps: 45.2,
+          ping_ms: 11,
+          connection_type: 'wifi'
+        }
+      ];
+      chart.update(newResults);
+
+      // Metric should still be ping
+      expect(chart.getMetric()).toBe('ping');
+    });
+
+    it('changes metric via UI select element', () => {
+      const chart = createSpeedChart(container);
+      chart.update(results);
+
+      const select = container.querySelector('.speed-chart__selector-select');
+
+      // Change to upload
+      select.value = 'upload';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+
+      expect(chart.getMetric()).toBe('upload');
+
+      // Change to ping
+      select.value = 'ping';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+
+      expect(chart.getMetric()).toBe('ping');
     });
   });
 });

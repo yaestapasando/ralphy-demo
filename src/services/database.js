@@ -9,6 +9,9 @@ const DB_NAME = 'SpeedTestDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'speedTestResults';
 
+// Singleton database instance
+let dbInstance = null;
+
 /**
  * Database schema for SpeedTestResult
  * @typedef {Object} SpeedTestResult
@@ -30,10 +33,15 @@ const STORE_NAME = 'speedTestResults';
 /**
  * Initialize and open the IndexedDB database
  * Creates the object store and indexes on first run or upgrade
+ * Uses a singleton pattern to prevent multiple concurrent connections
  * @returns {Promise<import('idb').IDBPDatabase>} Database instance
  */
 export async function initDatabase() {
-  const db = await openDB(DB_NAME, DB_VERSION, {
+  if (dbInstance) {
+    return dbInstance;
+  }
+
+  dbInstance = await openDB(DB_NAME, DB_VERSION, {
     upgrade(db, _oldVersion, _newVersion, _transaction) {
       // Create object store if it doesn't exist
       if (!db.objectStoreNames.contains(STORE_NAME)) {
@@ -58,10 +66,11 @@ export async function initDatabase() {
     },
     terminated() {
       console.error('Database connection was unexpectedly terminated');
+      dbInstance = null;
     }
   });
 
-  return db;
+  return dbInstance;
 }
 
 /**
@@ -70,7 +79,7 @@ export async function initDatabase() {
  * @returns {Promise<import('idb').IDBPDatabase>} Database instance
  */
 export async function getDatabase() {
-  return await openDB(DB_NAME, DB_VERSION);
+  return await initDatabase();
 }
 
 /**
@@ -91,4 +100,95 @@ export function getDatabaseConfig() {
  */
 export function isIndexedDBSupported() {
   return typeof indexedDB !== 'undefined';
+}
+
+/**
+ * Save a speed test result to the database
+ * @param {SpeedTestResult} result - The speed test result to save
+ * @returns {Promise<string>} The ID of the saved result
+ * @throws {Error} If the result is invalid or save fails
+ */
+export async function saveResult(result) {
+  if (!result || typeof result !== 'object') {
+    throw new Error('Invalid result: must be an object');
+  }
+
+  if (!result.id) {
+    throw new Error('Invalid result: missing required field "id"');
+  }
+
+  const db = await getDatabase();
+
+  try {
+    await db.put(STORE_NAME, result);
+    return result.id;
+  } catch (error) {
+    throw new Error(`Failed to save result: ${error.message}`, { cause: error });
+  }
+}
+
+/**
+ * Get all speed test results from the database
+ * Results are sorted by timestamp in descending order (newest first)
+ * @returns {Promise<SpeedTestResult[]>} Array of all speed test results
+ */
+export async function getAllResults() {
+  const db = await getDatabase();
+
+  try {
+    const results = await db.getAll(STORE_NAME);
+
+    // Sort by timestamp descending (newest first)
+    return results.sort((a, b) => {
+      return new Date(b.timestamp) - new Date(a.timestamp);
+    });
+  } catch (error) {
+    throw new Error(`Failed to retrieve results: ${error.message}`, { cause: error });
+  }
+}
+
+/**
+ * Delete a specific speed test result by ID
+ * @param {string} id - The ID of the result to delete
+ * @returns {Promise<void>}
+ * @throws {Error} If the ID is invalid or delete fails
+ */
+export async function deleteResult(id) {
+  if (!id || typeof id !== 'string') {
+    throw new Error('Invalid ID: must be a non-empty string');
+  }
+
+  const db = await getDatabase();
+
+  try {
+    await db.delete(STORE_NAME, id);
+  } catch (error) {
+    throw new Error(`Failed to delete result: ${error.message}`, { cause: error });
+  }
+}
+
+/**
+ * Delete all speed test results from the database
+ * @returns {Promise<void>}
+ */
+export async function clearAll() {
+  const db = await getDatabase();
+
+  try {
+    await db.clear(STORE_NAME);
+  } catch (error) {
+    throw new Error(`Failed to clear all results: ${error.message}`, { cause: error });
+  }
+}
+
+/**
+ * Close the database connection and reset the singleton instance
+ * Primarily used for testing purposes
+ * @returns {void}
+ */
+export function closeDatabase() {
+  if (dbInstance) {
+    dbInstance.close();
+    dbInstance = null;
+  }
 }

@@ -7,7 +7,12 @@ import {
   initDatabase,
   getDatabase,
   getDatabaseConfig,
-  isIndexedDBSupported
+  isIndexedDBSupported,
+  saveResult,
+  getAllResults,
+  deleteResult,
+  clearAll,
+  closeDatabase
 } from '../src/services/database.js';
 import { deleteDB } from 'idb';
 
@@ -16,7 +21,8 @@ const STORE_NAME = 'speedTestResults';
 
 describe('Database Configuration', () => {
   beforeEach(async () => {
-    // Clean up database before each test
+    // Close any open connections and clean up database before each test
+    closeDatabase();
     try {
       await deleteDB(DB_NAME);
     } catch (error) {
@@ -25,7 +31,8 @@ describe('Database Configuration', () => {
   });
 
   afterEach(async () => {
-    // Clean up database after each test
+    // Close connections and clean up database after each test
+    closeDatabase();
     try {
       await deleteDB(DB_NAME);
     } catch (error) {
@@ -259,6 +266,377 @@ describe('Database Configuration', () => {
 
       await readTransaction.done;
       db.close();
+    });
+  });
+
+  describe('CRUD Operations', () => {
+
+    describe('saveResult', () => {
+      it('should save a valid speed test result', async () => {
+        const result = {
+          id: 'test-save-1',
+          timestamp: '2026-02-24T10:00:00Z',
+          download_mbps: 100.5,
+          upload_mbps: 50.2,
+          ping_ms: 10,
+          jitter_ms: 2.5,
+          connection_type: 'wifi',
+          effective_type: '4g',
+          downlink_mbps: 10,
+          rtt_ms: 50,
+          server_used: 'auto',
+          ip_address: 'redacted',
+          user_agent: 'Mozilla/5.0...'
+        };
+
+        const savedId = await saveResult(result);
+
+        expect(savedId).toBe('test-save-1');
+
+        // Verify it was actually saved by retrieving all results
+        const results = await getAllResults();
+        expect(results).toHaveLength(1);
+        expect(results[0]).toEqual(result);
+      });
+
+      it('should update an existing result with the same id', async () => {
+        const result1 = {
+          id: 'test-update-1',
+          timestamp: '2026-02-24T10:00:00Z',
+          download_mbps: 100,
+          upload_mbps: 50,
+          ping_ms: 10,
+          jitter_ms: 2,
+          connection_type: 'wifi',
+          effective_type: '4g',
+          downlink_mbps: 10,
+          rtt_ms: 50,
+          server_used: 'auto',
+          ip_address: 'redacted',
+          user_agent: 'Mozilla/5.0...'
+        };
+
+        const result2 = {
+          ...result1,
+          download_mbps: 200,
+          upload_mbps: 100
+        };
+
+        await saveResult(result1);
+        await saveResult(result2);
+
+        // Should have only one record
+        const results = await getAllResults();
+        expect(results).toHaveLength(1);
+        expect(results[0].download_mbps).toBe(200);
+        expect(results[0].upload_mbps).toBe(100);
+      });
+
+      it('should throw error for null or undefined result', async () => {
+        await expect(saveResult(null)).rejects.toThrow('Invalid result: must be an object');
+        await expect(saveResult(undefined)).rejects.toThrow('Invalid result: must be an object');
+      });
+
+      it('should throw error for non-object result', async () => {
+        await expect(saveResult('string')).rejects.toThrow('Invalid result: must be an object');
+        await expect(saveResult(123)).rejects.toThrow('Invalid result: must be an object');
+      });
+
+      it('should throw error for result without id', async () => {
+        const invalidResult = {
+          timestamp: '2026-02-24T10:00:00Z',
+          download_mbps: 100
+        };
+
+        await expect(saveResult(invalidResult)).rejects.toThrow('Invalid result: missing required field "id"');
+      });
+    });
+
+    describe('getAllResults', () => {
+      it('should return empty array when no results exist', async () => {
+        const results = await getAllResults();
+
+        expect(results).toEqual([]);
+      });
+
+      it('should return all saved results', async () => {
+        const result1 = {
+          id: 'test-get-1',
+          timestamp: '2026-02-24T10:00:00Z',
+          download_mbps: 100,
+          upload_mbps: 50,
+          ping_ms: 10,
+          jitter_ms: 2,
+          connection_type: 'wifi',
+          effective_type: '4g',
+          downlink_mbps: 10,
+          rtt_ms: 50,
+          server_used: 'auto',
+          ip_address: 'redacted',
+          user_agent: 'Mozilla/5.0...'
+        };
+
+        const result2 = {
+          id: 'test-get-2',
+          timestamp: '2026-02-24T11:00:00Z',
+          download_mbps: 80,
+          upload_mbps: 40,
+          ping_ms: 15,
+          jitter_ms: 3,
+          connection_type: 'cellular',
+          effective_type: '4g',
+          downlink_mbps: 5,
+          rtt_ms: 100,
+          server_used: 'auto',
+          ip_address: 'redacted',
+          user_agent: 'Mozilla/5.0...'
+        };
+
+        await saveResult(result1);
+        await saveResult(result2);
+
+        const results = await getAllResults();
+
+        expect(results).toHaveLength(2);
+        expect(results).toEqual(expect.arrayContaining([result1, result2]));
+      });
+
+      it('should return results sorted by timestamp descending (newest first)', async () => {
+        const result1 = {
+          id: 'test-sort-1',
+          timestamp: '2026-02-24T10:00:00Z',
+          download_mbps: 100,
+          upload_mbps: 50,
+          ping_ms: 10,
+          jitter_ms: 2,
+          connection_type: 'wifi',
+          effective_type: '4g',
+          downlink_mbps: 10,
+          rtt_ms: 50,
+          server_used: 'auto',
+          ip_address: 'redacted',
+          user_agent: 'Mozilla/5.0...'
+        };
+
+        const result2 = {
+          id: 'test-sort-2',
+          timestamp: '2026-02-24T12:00:00Z',
+          download_mbps: 90,
+          upload_mbps: 45,
+          ping_ms: 12,
+          jitter_ms: 2.5,
+          connection_type: 'wifi',
+          effective_type: '4g',
+          downlink_mbps: 10,
+          rtt_ms: 50,
+          server_used: 'auto',
+          ip_address: 'redacted',
+          user_agent: 'Mozilla/5.0...'
+        };
+
+        const result3 = {
+          id: 'test-sort-3',
+          timestamp: '2026-02-24T11:00:00Z',
+          download_mbps: 95,
+          upload_mbps: 48,
+          ping_ms: 11,
+          jitter_ms: 2.2,
+          connection_type: 'ethernet',
+          effective_type: '4g',
+          downlink_mbps: 100,
+          rtt_ms: 10,
+          server_used: 'auto',
+          ip_address: 'redacted',
+          user_agent: 'Mozilla/5.0...'
+        };
+
+        // Save in random order
+        await saveResult(result2);
+        await saveResult(result1);
+        await saveResult(result3);
+
+        const results = await getAllResults();
+
+        // Should be sorted newest first
+        expect(results[0].id).toBe('test-sort-2'); // 12:00
+        expect(results[1].id).toBe('test-sort-3'); // 11:00
+        expect(results[2].id).toBe('test-sort-1'); // 10:00
+      });
+    });
+
+    describe('deleteResult', () => {
+      it('should delete a specific result by id', async () => {
+        const result1 = {
+          id: 'test-delete-1',
+          timestamp: '2026-02-24T10:00:00Z',
+          download_mbps: 100,
+          upload_mbps: 50,
+          ping_ms: 10,
+          jitter_ms: 2,
+          connection_type: 'wifi',
+          effective_type: '4g',
+          downlink_mbps: 10,
+          rtt_ms: 50,
+          server_used: 'auto',
+          ip_address: 'redacted',
+          user_agent: 'Mozilla/5.0...'
+        };
+
+        const result2 = {
+          id: 'test-delete-2',
+          timestamp: '2026-02-24T11:00:00Z',
+          download_mbps: 80,
+          upload_mbps: 40,
+          ping_ms: 15,
+          jitter_ms: 3,
+          connection_type: 'cellular',
+          effective_type: '4g',
+          downlink_mbps: 5,
+          rtt_ms: 100,
+          server_used: 'auto',
+          ip_address: 'redacted',
+          user_agent: 'Mozilla/5.0...'
+        };
+
+        await saveResult(result1);
+        await saveResult(result2);
+
+        await deleteResult('test-delete-1');
+
+        const results = await getAllResults();
+        expect(results).toHaveLength(1);
+        expect(results[0].id).toBe('test-delete-2');
+      });
+
+      it('should not throw error when deleting non-existent id', async () => {
+        await expect(deleteResult('non-existent-id')).resolves.not.toThrow();
+      });
+
+      it('should throw error for invalid id (null, undefined, empty string)', async () => {
+        await expect(deleteResult(null)).rejects.toThrow('Invalid ID: must be a non-empty string');
+        await expect(deleteResult(undefined)).rejects.toThrow('Invalid ID: must be a non-empty string');
+        await expect(deleteResult('')).rejects.toThrow('Invalid ID: must be a non-empty string');
+      });
+
+      it('should throw error for non-string id', async () => {
+        await expect(deleteResult(123)).rejects.toThrow('Invalid ID: must be a non-empty string');
+        await expect(deleteResult({})).rejects.toThrow('Invalid ID: must be a non-empty string');
+      });
+    });
+
+    describe('clearAll', () => {
+      it('should delete all results from the database', async () => {
+        const result1 = {
+          id: 'test-clear-1',
+          timestamp: '2026-02-24T10:00:00Z',
+          download_mbps: 100,
+          upload_mbps: 50,
+          ping_ms: 10,
+          jitter_ms: 2,
+          connection_type: 'wifi',
+          effective_type: '4g',
+          downlink_mbps: 10,
+          rtt_ms: 50,
+          server_used: 'auto',
+          ip_address: 'redacted',
+          user_agent: 'Mozilla/5.0...'
+        };
+
+        const result2 = {
+          id: 'test-clear-2',
+          timestamp: '2026-02-24T11:00:00Z',
+          download_mbps: 80,
+          upload_mbps: 40,
+          ping_ms: 15,
+          jitter_ms: 3,
+          connection_type: 'cellular',
+          effective_type: '4g',
+          downlink_mbps: 5,
+          rtt_ms: 100,
+          server_used: 'auto',
+          ip_address: 'redacted',
+          user_agent: 'Mozilla/5.0...'
+        };
+
+        const result3 = {
+          id: 'test-clear-3',
+          timestamp: '2026-02-24T12:00:00Z',
+          download_mbps: 90,
+          upload_mbps: 45,
+          ping_ms: 12,
+          jitter_ms: 2.5,
+          connection_type: 'ethernet',
+          effective_type: '4g',
+          downlink_mbps: 100,
+          rtt_ms: 10,
+          server_used: 'auto',
+          ip_address: 'redacted',
+          user_agent: 'Mozilla/5.0...'
+        };
+
+        await saveResult(result1);
+        await saveResult(result2);
+        await saveResult(result3);
+
+        // Verify we have 3 results
+        let results = await getAllResults();
+        expect(results).toHaveLength(3);
+
+        await clearAll();
+
+        // Verify all results are deleted
+        results = await getAllResults();
+        expect(results).toHaveLength(0);
+      });
+
+      it('should not throw error when clearing empty database', async () => {
+        await expect(clearAll()).resolves.not.toThrow();
+
+        const results = await getAllResults();
+        expect(results).toHaveLength(0);
+      });
+
+      it('should allow saving new results after clearing', async () => {
+        const result1 = {
+          id: 'test-clear-save-1',
+          timestamp: '2026-02-24T10:00:00Z',
+          download_mbps: 100,
+          upload_mbps: 50,
+          ping_ms: 10,
+          jitter_ms: 2,
+          connection_type: 'wifi',
+          effective_type: '4g',
+          downlink_mbps: 10,
+          rtt_ms: 50,
+          server_used: 'auto',
+          ip_address: 'redacted',
+          user_agent: 'Mozilla/5.0...'
+        };
+
+        const result2 = {
+          id: 'test-clear-save-2',
+          timestamp: '2026-02-24T11:00:00Z',
+          download_mbps: 80,
+          upload_mbps: 40,
+          ping_ms: 15,
+          jitter_ms: 3,
+          connection_type: 'cellular',
+          effective_type: '4g',
+          downlink_mbps: 5,
+          rtt_ms: 100,
+          server_used: 'auto',
+          ip_address: 'redacted',
+          user_agent: 'Mozilla/5.0...'
+        };
+
+        await saveResult(result1);
+        await clearAll();
+        await saveResult(result2);
+
+        const results = await getAllResults();
+        expect(results).toHaveLength(1);
+        expect(results[0].id).toBe('test-clear-save-2');
+      });
     });
   });
 });

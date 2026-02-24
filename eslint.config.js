@@ -19,6 +19,7 @@ export default [
         clearTimeout: 'readonly',
         DOMException: 'readonly',
         Response: 'readonly',
+        crypto: 'readonly',
       },
     },
     rules: {

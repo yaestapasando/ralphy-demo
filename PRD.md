@@ -113,10 +113,10 @@ Usuario pulsa "Iniciar Test"
 - [x] **F1-T3** · `Alta` · `5h` — Implementar medición de velocidad de descarga con ficheros de tamaño progresivo (1MB → 10MB → 25MB)
 - [x] **F1-T4** · `Alta` · `5h` — Implementar medición de velocidad de subida mediante POST de datos aleatorios al servidor
 - [x] **F1-T5** · `Media` · `2h` — Calcular jitter como desviación estándar de las mediciones de latencia
-- [ ] **F1-T6** · `Alta` · `4h` — Diseñar e implementar el componente UI del gauge animado con actualización en tiempo real
-- [ ] **F1-T7** · `Alta` · `3h` — Implementar pantalla de resultados finales con valores destacados (download, upload, ping, jitter)
-- [ ] **F1-T8** · `Media` · `2h` — Manejo de errores: timeout, sin conexión, servidor no disponible
-- [ ] **F1-T9** · `Media` · `3h` — Tests unitarios para las funciones de cálculo de velocidad
+- [x] **F1-T6** · `Alta` · `4h` — Diseñar e implementar el componente UI del gauge animado con actualización en tiempo real
+- [x] **F1-T7** · `Alta` · `3h` — Implementar pantalla de resultados finales con valores destacados (download, upload, ping, jitter)
+- [x] **F1-T8** · `Media` · `2h` — Manejo de errores: timeout, sin conexión, servidor no disponible
+- [x] **F1-T9** · `Media` · `3h` — Tests unitarios para las funciones de cálculo de velocidad
 
 ---
 
@@ -132,8 +132,8 @@ Usuario pulsa "Iniciar Test"
 
 **Tareas:**
 
-- [ ] **F2-T1** · `Alta` · `3h` — Implementar módulo de detección usando `navigator.connection` (type, effectiveType, downlink, rtt)
-- [ ] **F2-T2** · `Media` · `3h` — Crear lógica de fallback para navegadores sin soporte (Firefox, Safari parcial) usando User Agent + heurísticas de velocidad
+- [x] **F2-T1** · `Alta` · `3h` — Implementar módulo de detección usando `navigator.connection` (type, effectiveType, downlink, rtt)
+- [x] **F2-T2** · `Media` · `3h` — Crear lógica de fallback para navegadores sin soporte (Firefox, Safari parcial) usando User Agent + heurísticas de velocidad
 - [ ] **F2-T3** · `Alta` · `2h` — Diseñar e implementar el componente UI del indicador de tipo de conexión (icono + etiqueta) en la cabecera de la app
 - [ ] **F2-T4** · `Media` · `2h` — Implementar listener `connection.onchange` para actualizar el indicador en tiempo real si cambia la red
 - [ ] **F2-T5** · `Baja` · `1h` — Mapear los valores de la API (`wifi`, `cellular`, `ethernet`, etc.) a iconos y etiquetas legibles en español

@@ -1,9 +1,9 @@
 {
   "tasks": {
-    "markdown:PRD.md:116": {
+    "markdown:PRD.md:137": {
       "count": 1,
-      "last": "2026-02-24T12:16:15.857Z",
-      "title": "**F1-T6** · `Alta` · `4h` — Diseñar e implementar el componente UI del gauge animado con actualización en tiempo real"
+      "last": "2026-02-24T14:41:09.891Z",
+      "title": "**F2-T3** · `Alta` · `2h` — Diseñar e implementar el componente UI del indicador de tipo de conexión (icono + etiqueta) en la cabecera de la app"
     }
   }
 }

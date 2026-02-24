@@ -108,11 +108,11 @@ Usuario pulsa "Iniciar Test"
 
 **Tareas:**
 
-- [ ] **F1-T1** · `Alta` · `4h` — Configurar servidor de ficheros de prueba o integrar librería `librespeed-speedtest` para evitar dependencia externa
-- [ ] **F1-T2** · `Alta` · `3h` — Implementar medición de latencia (ping) mediante peticiones HTTP repetidas al servidor de test
-- [ ] **F1-T3** · `Alta` · `5h` — Implementar medición de velocidad de descarga con ficheros de tamaño progresivo (1MB → 10MB → 25MB)
-- [ ] **F1-T4** · `Alta` · `5h` — Implementar medición de velocidad de subida mediante POST de datos aleatorios al servidor
-- [ ] **F1-T5** · `Media` · `2h` — Calcular jitter como desviación estándar de las mediciones de latencia
+- [x] **F1-T1** · `Alta` · `4h` — Configurar servidor de ficheros de prueba o integrar librería `librespeed-speedtest` para evitar dependencia externa
+- [x] **F1-T2** · `Alta` · `3h` — Implementar medición de latencia (ping) mediante peticiones HTTP repetidas al servidor de test
+- [x] **F1-T3** · `Alta` · `5h` — Implementar medición de velocidad de descarga con ficheros de tamaño progresivo (1MB → 10MB → 25MB)
+- [x] **F1-T4** · `Alta` · `5h` — Implementar medición de velocidad de subida mediante POST de datos aleatorios al servidor
+- [x] **F1-T5** · `Media` · `2h` — Calcular jitter como desviación estándar de las mediciones de latencia
 - [ ] **F1-T6** · `Alta` · `4h` — Diseñar e implementar el componente UI del gauge animado con actualización en tiempo real
 - [ ] **F1-T7** · `Alta` · `3h` — Implementar pantalla de resultados finales con valores destacados (download, upload, ping, jitter)
 - [ ] **F1-T8** · `Media` · `2h` — Manejo de errores: timeout, sin conexión, servidor no disponible

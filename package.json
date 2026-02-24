@@ -1,0 +1,31 @@
+{
+  "name": "ralphy-demo",
+  "version": "1.0.0",
+  "description": "Speed test web application",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yaestapasando/ralphy-demo.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/yaestapasando/ralphy-demo/issues"
+  },
+  "homepage": "https://github.com/yaestapasando/ralphy-demo#readme",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.0.2",
+    "vite": "^7.3.1",
+    "vitest": "^4.0.18"
+  }
+}

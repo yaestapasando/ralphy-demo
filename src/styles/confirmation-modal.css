@@ -1,0 +1,181 @@
+/**
+ * Confirmation Modal Styles
+ * Accessible modal dialog for confirming destructive actions
+ */
+
+/* Modal backdrop */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Modal container */
+.modal {
+  background: #ffffff;
+  border-radius: 0.5rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  max-width: 28rem;
+  width: 100%;
+  animation: slideIn 0.15s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-1rem);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Modal header */
+.modal__header {
+  padding: 1.5rem 1.5rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modal__title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+/* Modal body */
+.modal__body {
+  padding: 1.5rem;
+}
+
+.modal__message {
+  font-size: 0.9375rem;
+  color: #4b5563;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Modal footer */
+.modal__footer {
+  padding: 1rem 1.5rem 1.5rem;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+/* Modal buttons */
+.modal__button {
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.375rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.5;
+}
+
+.modal__button:focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.modal__button--cancel {
+  background: #ffffff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.modal__button--cancel:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.modal__button--cancel:focus {
+  box-shadow: 0 0 0 3px rgba(156, 163, 175, 0.3);
+}
+
+.modal__button--cancel:active {
+  background: #f3f4f6;
+}
+
+.modal__button--confirm {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.modal__button--confirm:hover {
+  background: #dc2626;
+}
+
+.modal__button--confirm:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.3);
+}
+
+.modal__button--confirm:active {
+  background: #b91c1c;
+}
+
+/* Mobile responsive */
+@media (max-width: 640px) {
+  .modal-backdrop {
+    padding: 0.5rem;
+  }
+
+  .modal {
+    max-width: 100%;
+  }
+
+  .modal__header {
+    padding: 1.25rem 1.25rem 0.875rem;
+  }
+
+  .modal__title {
+    font-size: 1.125rem;
+  }
+
+  .modal__body {
+    padding: 1.25rem;
+  }
+
+  .modal__message {
+    font-size: 0.875rem;
+  }
+
+  .modal__footer {
+    padding: 0.875rem 1.25rem 1.25rem;
+    flex-direction: column-reverse;
+  }
+
+  .modal__button {
+    width: 100%;
+    padding: 0.75rem 1rem;
+  }
+}
+
+/* Accessibility: reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .modal-backdrop,
+  .modal {
+    animation: none;
+  }
+}

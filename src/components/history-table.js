@@ -4,7 +4,8 @@
  * Shows: date, connection type, download speed, upload speed, and ping
  */
 
-import { getAllResults } from '../services/database.js';
+import { getAllResults, deleteResult } from '../services/database.js';
+import { createConfirmationModal } from './confirmation-modal.js';
 
 /**
  * Connection type display configuration
@@ -119,9 +120,10 @@ function formatPing(ping) {
 /**
  * Create a table row element for a speed test result
  * @param {Object} result - Speed test result
+ * @param {Function} onDelete - Callback function when delete button is clicked
  * @returns {HTMLTableRowElement} Table row element
  */
-function createTableRow(result) {
+function createTableRow(result, onDelete) {
   const row = document.createElement('tr');
   row.className = 'history-table__row';
   row.setAttribute('data-id', result.id);
@@ -168,11 +170,29 @@ function createTableRow(result) {
   pingCell.setAttribute('data-label', 'Ping');
   pingCell.textContent = formatPing(result.ping_ms);
 
+  // Actions column
+  const actionsCell = document.createElement('td');
+  actionsCell.className = 'history-table__cell history-table__cell--actions';
+  actionsCell.setAttribute('data-label', 'Acciones');
+
+  const deleteButton = document.createElement('button');
+  deleteButton.className = 'history-table__delete-btn';
+  deleteButton.setAttribute('aria-label', `Eliminar resultado del ${date} a las ${time}`);
+  deleteButton.innerHTML = '🗑️';
+  deleteButton.addEventListener('click', () => {
+    if (onDelete) {
+      onDelete(result);
+    }
+  });
+
+  actionsCell.appendChild(deleteButton);
+
   row.appendChild(dateCell);
   row.appendChild(connectionCell);
   row.appendChild(downloadCell);
   row.appendChild(uploadCell);
   row.appendChild(pingCell);
+  row.appendChild(actionsCell);
 
   return row;
 }
@@ -191,6 +211,7 @@ function createTableHeader() {
       <th class="history-table__header-cell history-table__header-cell--download">Descarga</th>
       <th class="history-table__header-cell history-table__header-cell--upload">Subida</th>
       <th class="history-table__header-cell history-table__header-cell--ping">Ping</th>
+      <th class="history-table__header-cell history-table__header-cell--actions">Acciones</th>
     </tr>
   `;
   return thead;
@@ -284,6 +305,31 @@ export function createHistoryTable(container) {
   let emptyStateElement = null;
 
   /**
+   * Handle delete action for a result
+   * Shows confirmation modal before deleting
+   * @param {Object} result - The result to delete
+   */
+  async function handleDelete(result) {
+    const { date, time } = formatTimestamp(result.timestamp);
+
+    createConfirmationModal({
+      title: 'Eliminar resultado',
+      message: `¿Está seguro de que desea eliminar el resultado del ${date} a las ${time}?`,
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      onConfirm: async () => {
+        try {
+          await deleteResult(result.id);
+          await render(); // Re-render table after deletion
+        } catch (error) {
+          console.error('Error deleting result:', error);
+          // Could show an error notification here
+        }
+      }
+    });
+  }
+
+  /**
    * Render the table with current results
    */
   async function render() {
@@ -320,7 +366,7 @@ export function createHistoryTable(container) {
     tbody.className = 'history-table__body';
 
     filteredResults.forEach(result => {
-      const row = createTableRow(result);
+      const row = createTableRow(result, handleDelete);
       tbody.appendChild(row);
     });
 

@@ -177,12 +177,13 @@ describe('history-table component', () => {
       await new Promise(resolve => setTimeout(resolve, 100));
 
       const headerCells = container.querySelectorAll('.history-table__header-cell');
-      expect(headerCells.length).toBe(5);
+      expect(headerCells.length).toBe(6);
       expect(headerCells[0].textContent).toBe('Fecha');
       expect(headerCells[1].textContent).toBe('Red');
       expect(headerCells[2].textContent).toBe('Descarga');
       expect(headerCells[3].textContent).toBe('Subida');
       expect(headerCells[4].textContent).toBe('Ping');
+      expect(headerCells[5].textContent).toBe('Acciones');
     });
   });
 
@@ -829,6 +830,259 @@ describe('history-table component', () => {
       const rows = container.querySelectorAll('.history-table__row');
       expect(rows.length).toBe(1);
       expect(rows[0].getAttribute('data-id')).toBe('cellular-5g');
+    });
+  });
+
+  // ===========================================================================
+  // Delete functionality
+  // ===========================================================================
+
+  describe('delete functionality', () => {
+    beforeEach(async () => {
+      // Add test data
+      await saveResult({
+        id: 'delete-test-1',
+        timestamp: '2026-02-20T10:00:00Z',
+        download_mbps: 95.4,
+        upload_mbps: 42.1,
+        ping_ms: 12,
+        jitter_ms: 3.2,
+        connection_type: 'wifi',
+        effective_type: '4g',
+        downlink_mbps: 10,
+        rtt_ms: 50,
+        server_used: 'auto',
+        ip_address: 'redacted',
+        user_agent: 'Mozilla/5.0'
+      });
+
+      await saveResult({
+        id: 'delete-test-2',
+        timestamp: '2026-02-22T14:00:00Z',
+        download_mbps: 50.5,
+        upload_mbps: 20.3,
+        ping_ms: 45,
+        jitter_ms: 8.1,
+        connection_type: 'cellular',
+        effective_type: '4g',
+        downlink_mbps: 10,
+        rtt_ms: 50,
+        server_used: 'auto',
+        ip_address: 'redacted',
+        user_agent: 'Mozilla/5.0'
+      });
+    });
+
+    it('displays delete button for each row', async () => {
+      createHistoryTable(container);
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const deleteButtons = container.querySelectorAll('.history-table__delete-btn');
+      expect(deleteButtons.length).toBe(2);
+    });
+
+    it('delete button has correct accessibility attributes', async () => {
+      createHistoryTable(container);
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const deleteButton = container.querySelector('.history-table__delete-btn');
+      expect(deleteButton).not.toBeNull();
+      expect(deleteButton.hasAttribute('aria-label')).toBe(true);
+      expect(deleteButton.getAttribute('aria-label')).toContain('Eliminar resultado');
+    });
+
+    it('clicking delete button opens confirmation modal', async () => {
+      createHistoryTable(container);
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const deleteButton = container.querySelector('.history-table__delete-btn');
+      expect(deleteButton).not.toBeNull();
+
+      // Click delete button
+      deleteButton.click();
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Modal should be visible
+      const modal = document.querySelector('.modal-backdrop');
+      expect(modal).not.toBeNull();
+
+      // Clean up modal
+      if (modal && modal.parentNode) {
+        modal.parentNode.removeChild(modal);
+      }
+    });
+
+    it('confirmation modal displays correct message', async () => {
+      createHistoryTable(container);
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const deleteButton = container.querySelector('.history-table__delete-btn');
+      deleteButton.click();
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      const modalTitle = document.querySelector('.modal__title');
+      const modalMessage = document.querySelector('.modal__message');
+
+      expect(modalTitle).not.toBeNull();
+      expect(modalTitle.textContent).toBe('Eliminar resultado');
+      expect(modalMessage).not.toBeNull();
+      expect(modalMessage.textContent).toContain('¿Está seguro');
+
+      // Clean up modal
+      const modal = document.querySelector('.modal-backdrop');
+      if (modal && modal.parentNode) {
+        modal.parentNode.removeChild(modal);
+      }
+    });
+
+    it('clicking cancel button closes modal without deleting', async () => {
+      createHistoryTable(container);
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Initial count
+      let rows = container.querySelectorAll('.history-table__row');
+      expect(rows.length).toBe(2);
+
+      const deleteButton = container.querySelector('.history-table__delete-btn');
+      deleteButton.click();
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Click cancel
+      const cancelButton = document.querySelector('[data-action="cancel"]');
+      expect(cancelButton).not.toBeNull();
+      cancelButton.click();
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Modal should be closed
+      const modal = document.querySelector('.modal-backdrop');
+      expect(modal).toBeNull();
+
+      // Row count should remain the same
+      rows = container.querySelectorAll('.history-table__row');
+      expect(rows.length).toBe(2);
+    });
+
+    it('clicking confirm button deletes the result', async () => {
+      createHistoryTable(container);
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Initial count
+      let rows = container.querySelectorAll('.history-table__row');
+      expect(rows.length).toBe(2);
+
+      // Click delete on first row
+      const deleteButton = rows[0].querySelector('.history-table__delete-btn');
+      deleteButton.click();
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Click confirm
+      const confirmButton = document.querySelector('[data-action="confirm"]');
+      expect(confirmButton).not.toBeNull();
+      confirmButton.click();
+      await new Promise(resolve => setTimeout(resolve, 150));
+
+      // Row count should be reduced
+      rows = container.querySelectorAll('.history-table__row');
+      expect(rows.length).toBe(1);
+
+      // Modal should be closed
+      const modal = document.querySelector('.modal-backdrop');
+      expect(modal).toBeNull();
+    });
+
+    it('deleting result updates the table with correct remaining data', async () => {
+      createHistoryTable(container);
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      let rows = container.querySelectorAll('.history-table__row');
+      const secondRowId = rows[1].getAttribute('data-id');
+
+      // Delete first row
+      const deleteButton = rows[0].querySelector('.history-table__delete-btn');
+      deleteButton.click();
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      const confirmButton = document.querySelector('[data-action="confirm"]');
+      confirmButton.click();
+      await new Promise(resolve => setTimeout(resolve, 150));
+
+      // Check that only the second row remains
+      rows = container.querySelectorAll('.history-table__row');
+      expect(rows.length).toBe(1);
+      expect(rows[0].getAttribute('data-id')).toBe(secondRowId);
+    });
+
+    it('deleting all results shows empty state', async () => {
+      createHistoryTable(container);
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Delete first result
+      let deleteButton = container.querySelector('.history-table__delete-btn');
+      deleteButton.click();
+      await new Promise(resolve => setTimeout(resolve, 50));
+      let confirmButton = document.querySelector('[data-action="confirm"]');
+      confirmButton.click();
+      await new Promise(resolve => setTimeout(resolve, 150));
+
+      // Delete second result
+      deleteButton = container.querySelector('.history-table__delete-btn');
+      deleteButton.click();
+      await new Promise(resolve => setTimeout(resolve, 50));
+      confirmButton = document.querySelector('[data-action="confirm"]');
+      confirmButton.click();
+      await new Promise(resolve => setTimeout(resolve, 150));
+
+      // Should show empty state
+      const emptyState = container.querySelector('.history-table__empty');
+      expect(emptyState).not.toBeNull();
+
+      const table = container.querySelector('.history-table');
+      expect(table).toBeNull();
+    });
+
+    it('pressing Escape key closes modal without deleting', async () => {
+      createHistoryTable(container);
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const deleteButton = container.querySelector('.history-table__delete-btn');
+      deleteButton.click();
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Press Escape key
+      const escapeEvent = new KeyboardEvent('keydown', { key: 'Escape' });
+      document.dispatchEvent(escapeEvent);
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Modal should be closed
+      const modal = document.querySelector('.modal-backdrop');
+      expect(modal).toBeNull();
+
+      // Row count should remain the same
+      const rows = container.querySelectorAll('.history-table__row');
+      expect(rows.length).toBe(2);
+    });
+
+    it('clicking backdrop closes modal without deleting', async () => {
+      createHistoryTable(container);
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const deleteButton = container.querySelector('.history-table__delete-btn');
+      deleteButton.click();
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Click backdrop
+      const backdrop = document.querySelector('.modal-backdrop');
+      expect(backdrop).not.toBeNull();
+      backdrop.click();
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Modal should be closed
+      const modal = document.querySelector('.modal-backdrop');
+      expect(modal).toBeNull();
+
+      // Row count should remain the same
+      const rows = container.querySelectorAll('.history-table__row');
+      expect(rows.length).toBe(2);
     });
   });
 });

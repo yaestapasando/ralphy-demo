@@ -5,6 +5,27 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createHistoryFilters } from '../src/components/history-filters.js';
+import * as database from '../src/services/database.js';
+import * as confirmationModal from '../src/components/confirmation-modal.js';
+
+// Mock the database module
+vi.mock('../src/services/database.js', () => ({
+  clearAll: vi.fn(() => Promise.resolve())
+}));
+
+// Mock the confirmation modal module
+vi.mock('../src/components/confirmation-modal.js', () => ({
+  createConfirmationModal: vi.fn((options) => {
+    // Immediately call onConfirm for testing purposes
+    if (options.onConfirm) {
+      options.onConfirm();
+    }
+    return {
+      open: vi.fn(),
+      close: vi.fn()
+    };
+  })
+}));
 
 describe('history-filters component', () => {
   let container;
@@ -458,6 +479,100 @@ describe('history-filters component', () => {
       filters.clear();
 
       expect(filters.hasActiveFilters()).toBe(false);
+    });
+  });
+
+  // ===========================================================================
+  // Delete all history
+  // ===========================================================================
+
+  describe('delete all history', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    it('displays delete all button', () => {
+      createHistoryFilters(container);
+      const deleteAllButton = container.querySelector('.history-filters__delete-all-button');
+      expect(deleteAllButton).not.toBeNull();
+      expect(deleteAllButton.textContent).toContain('Borrar todo el historial');
+    });
+
+    it('shows confirmation modal when delete all button is clicked', () => {
+      createHistoryFilters(container);
+      const deleteAllButton = container.querySelector('.history-filters__delete-all-button');
+
+      // Click the button
+      deleteAllButton.click();
+
+      // Check that modal was created with correct parameters
+      expect(confirmationModal.createConfirmationModal).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Borrar todo el historial',
+          message: expect.stringContaining('¿Está seguro de que desea eliminar todos los resultados del histórico?'),
+          confirmText: 'Borrar todo',
+          cancelText: 'Cancelar'
+        })
+      );
+    });
+
+    it('calls clearAll and onClearAll when confirmed', async () => {
+      const onClearAll = vi.fn();
+      createHistoryFilters(container, { onClearAll });
+
+      const deleteAllButton = container.querySelector('.history-filters__delete-all-button');
+      deleteAllButton.click();
+
+      // Wait for async operations
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      expect(database.clearAll).toHaveBeenCalled();
+      expect(onClearAll).toHaveBeenCalled();
+    });
+
+    it('does not call clearAll when cancelled', () => {
+      // Mock the modal to call onCancel instead
+      confirmationModal.createConfirmationModal.mockImplementationOnce((options) => {
+        if (options.onCancel) {
+          options.onCancel();
+        }
+        return {
+          open: vi.fn(),
+          close: vi.fn()
+        };
+      });
+
+      const onClearAll = vi.fn();
+      createHistoryFilters(container, { onClearAll });
+
+      const deleteAllButton = container.querySelector('.history-filters__delete-all-button');
+      deleteAllButton.click();
+
+      // Verify clearAll was not called
+      expect(database.clearAll).not.toHaveBeenCalled();
+      expect(onClearAll).not.toHaveBeenCalled();
+    });
+
+    it('handles errors gracefully when clearAll fails', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const mockError = new Error('Database error');
+      database.clearAll.mockRejectedValueOnce(mockError);
+
+      const onClearAll = vi.fn();
+      createHistoryFilters(container, { onClearAll });
+
+      const deleteAllButton = container.querySelector('.history-filters__delete-all-button');
+      deleteAllButton.click();
+
+      // Wait for error handling
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error clearing all results:', mockError);
+
+      // onClearAll should not be called on error
+      expect(onClearAll).not.toHaveBeenCalled();
+
+      consoleErrorSpy.mockRestore();
     });
   });
 

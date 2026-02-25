@@ -43,6 +43,13 @@ if (historyContainer) {
         if (speedChart) {
           speedChart.update(historyTable.getResults());
         }
+      },
+      onClearAll: () => {
+        // Refresh table and chart after clearing all history
+        historyTable.refresh();
+        if (speedChart) {
+          speedChart.update(historyTable.getResults());
+        }
       }
     });
   }

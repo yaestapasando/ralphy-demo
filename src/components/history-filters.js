@@ -3,7 +3,11 @@
  * Provides filtering controls for the history table:
  * - Connection type multiselect
  * - Date range picker (from/to)
+ * - Delete all history button
  */
+
+import { clearAll } from '../services/database.js';
+import { createConfirmationModal } from './confirmation-modal.js';
 
 /**
  * Connection type options
@@ -75,7 +79,7 @@ export function createHistoryFilters(container, options = {}) {
     throw new Error('Container element is required');
   }
 
-  const { onFilterChange } = options;
+  const { onFilterChange, onClearAll } = options;
 
   let selectedConnectionTypes = [];
   let dateFrom = null;
@@ -226,6 +230,10 @@ export function createHistoryFilters(container, options = {}) {
     dateSection.appendChild(dateLabel);
     dateSection.appendChild(dateGroup);
 
+    // Buttons container
+    const buttonsContainer = document.createElement('div');
+    buttonsContainer.className = 'history-filters__buttons';
+
     // Clear filters button
     const clearButton = document.createElement('button');
     clearButton.type = 'button';
@@ -236,10 +244,21 @@ export function createHistoryFilters(container, options = {}) {
       emitFilterChange();
     });
 
+    // Delete all button
+    const deleteAllButton = document.createElement('button');
+    deleteAllButton.type = 'button';
+    deleteAllButton.className = 'history-filters__delete-all-button';
+    deleteAllButton.textContent = '🗑️ Borrar todo el historial';
+    deleteAllButton.setAttribute('aria-label', 'Borrar todo el historial');
+    deleteAllButton.addEventListener('click', handleDeleteAll);
+
+    buttonsContainer.appendChild(clearButton);
+    buttonsContainer.appendChild(deleteAllButton);
+
     // Append all sections
     wrapper.appendChild(connectionSection);
     wrapper.appendChild(dateSection);
-    wrapper.appendChild(clearButton);
+    wrapper.appendChild(buttonsContainer);
 
     container.appendChild(wrapper);
   }
@@ -285,6 +304,31 @@ export function createHistoryFilters(container, options = {}) {
 
     // Re-render to update UI
     render();
+  }
+
+  /**
+   * Handle delete all history action
+   * Shows confirmation modal before deleting
+   */
+  async function handleDeleteAll() {
+    createConfirmationModal({
+      title: 'Borrar todo el historial',
+      message: '¿Está seguro de que desea eliminar todos los resultados del histórico? Esta acción no se puede deshacer.',
+      confirmText: 'Borrar todo',
+      cancelText: 'Cancelar',
+      onConfirm: async () => {
+        try {
+          await clearAll();
+          // Notify parent component
+          if (typeof onClearAll === 'function') {
+            onClearAll();
+          }
+        } catch (error) {
+          console.error('Error clearing all results:', error);
+          // Could show an error notification here
+        }
+      }
+    });
   }
 
   /**

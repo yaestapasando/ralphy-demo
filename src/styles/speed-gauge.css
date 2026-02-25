@@ -1,0 +1,109 @@
+/**
+ * Speed Gauge Styles
+ *
+ * Styling for the animated SVG gauge component.
+ */
+
+/* ========================================
+   Speed Gauge Container
+   ======================================== */
+
+.speed-gauge {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* ========================================
+   Gauge Track (Background Arc)
+   ======================================== */
+
+.speed-gauge__track {
+  stroke: #e5e7eb;
+  stroke-linecap: round;
+  fill: none;
+}
+
+/* ========================================
+   Gauge Fill (Animated Arc)
+   ======================================== */
+
+.speed-gauge__fill {
+  stroke: #3b82f6;
+  stroke-linecap: round;
+  fill: none;
+  transition: stroke 0.3s ease;
+}
+
+/* Phase-specific colors */
+.speed-gauge--ping .speed-gauge__fill {
+  stroke: #f59e0b;
+}
+
+.speed-gauge--download .speed-gauge__fill {
+  stroke: #3b82f6;
+}
+
+.speed-gauge--upload .speed-gauge__fill {
+  stroke: #059669;
+}
+
+/* ========================================
+   Gauge Text Elements
+   ======================================== */
+
+.speed-gauge__value {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  fill: #1f2937;
+  text-anchor: middle;
+  dominant-baseline: central;
+  font-variant-numeric: tabular-nums;
+}
+
+.speed-gauge__unit {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  fill: #6b7280;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.speed-gauge__phase {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  fill: #9ca3af;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+/* ========================================
+   Responsive Adjustments
+   ======================================== */
+
+@media (max-width: 640px) {
+  .speed-gauge__value {
+    font-size: 28px;
+  }
+
+  .speed-gauge__unit {
+    font-size: 12px;
+  }
+
+  .speed-gauge__phase {
+    font-size: 11px;
+  }
+}
+
+/* ========================================
+   Accessibility: Reduced Motion
+   ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .speed-gauge__fill {
+    transition: none;
+  }
+}

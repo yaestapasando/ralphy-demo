@@ -15,6 +15,7 @@ export default defineConfig({
       ['**/*indicator.test.js', 'happy-dom'],
       ['**/*gauge.test.js', 'happy-dom'],
       ['**/*screen.test.js', 'happy-dom'],
+      ['**/test-screen.test.js', 'happy-dom'],
       ['**/database.test.js', 'happy-dom'],
       ['**/history-table.test.js', 'happy-dom'],
       ['**/navigation.test.js', 'happy-dom'],

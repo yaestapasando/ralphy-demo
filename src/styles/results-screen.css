@@ -1,0 +1,162 @@
+/**
+ * Results Screen Styles
+ *
+ * Displays the final speed test results in a card-based grid layout.
+ */
+
+/* ========================================
+   Results Screen Container
+   ======================================== */
+
+.results-screen {
+  width: 100%;
+  padding: 0;
+}
+
+.results-screen__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+/* ========================================
+   Results Grid
+   ======================================== */
+
+.results-screen__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .results-screen__grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+}
+
+/* ========================================
+   Result Cards
+   ======================================== */
+
+.results-screen__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: #ffffff;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  border: 2px solid transparent;
+  transition: all 0.15s ease;
+  min-height: 120px;
+}
+
+.results-screen__card:hover {
+  border-color: #e5e7eb;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+              0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* ========================================
+   Card Content
+   ======================================== */
+
+.results-screen__label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  margin-bottom: 0.5rem;
+}
+
+.results-screen__value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.25rem;
+}
+
+.results-screen__unit {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+/* ========================================
+   Card Color Variants
+   ======================================== */
+
+/* Download card (primary/blue accent) */
+.results-screen__card--download {
+  border-left: 4px solid #3b82f6;
+}
+
+.results-screen__card--download .results-screen__value {
+  color: #1e40af;
+}
+
+/* Upload card (green accent) */
+.results-screen__card--upload {
+  border-left: 4px solid #059669;
+}
+
+.results-screen__card--upload .results-screen__value {
+  color: #065f46;
+}
+
+/* Ping card (yellow accent) */
+.results-screen__card--ping {
+  border-left: 4px solid #f59e0b;
+}
+
+.results-screen__card--ping .results-screen__value {
+  color: #92400e;
+}
+
+/* Jitter card (gray accent) */
+.results-screen__card--jitter {
+  border-left: 4px solid #6b7280;
+}
+
+.results-screen__card--jitter .results-screen__value {
+  color: #374151;
+}
+
+/* ========================================
+   Responsive Adjustments
+   ======================================== */
+
+@media (max-width: 640px) {
+  .results-screen__card {
+    padding: 1.25rem;
+    min-height: 100px;
+  }
+
+  .results-screen__value {
+    font-size: 2rem;
+  }
+
+  .results-screen__unit {
+    font-size: 0.875rem;
+  }
+}
+
+/* ========================================
+   Accessibility: Reduced Motion
+   ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .results-screen__card {
+    transition: none;
+  }
+}

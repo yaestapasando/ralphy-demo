@@ -6,6 +6,7 @@
 
 import { createNavigation } from './components/navigation.js';
 import { createConnectionIndicator } from './components/connection-indicator.js';
+import { createTestScreen } from './components/test-screen.js';
 import { createHistoryFilters } from './components/history-filters.js';
 import { createHistoryTable } from './components/history-table.js';
 import { createHistoryStatistics } from './components/history-statistics.js';
@@ -70,6 +71,12 @@ if (indicatorContainer) {
   const indicator = createConnectionIndicator(indicatorContainer);
   // Subscribe to connection changes for automatic updates
   indicator.subscribe();
+}
+
+// Initialize test screen
+const speedTestContainer = document.getElementById('speed-test-container');
+if (speedTestContainer) {
+  createTestScreen(speedTestContainer);
 }
 
 // Initialize speed chart

@@ -17,6 +17,7 @@ export default defineConfig({
       ['**/*screen.test.js', 'happy-dom'],
       ['**/database.test.js', 'happy-dom'],
       ['**/history-table.test.js', 'happy-dom'],
+      ['**/navigation.test.js', 'happy-dom'],
     ],
   },
 });

@@ -1,9 +1,10 @@
 /**
  * Main application entry point.
  *
- * Initializes the connection indicator, history filters, history table, and sets up the app.
+ * Initializes the navigation, connection indicator, history filters, history table, and sets up the app.
  */
 
+import { createNavigation } from './components/navigation.js';
 import { createConnectionIndicator } from './components/connection-indicator.js';
 import { createHistoryFilters } from './components/history-filters.js';
 import { createHistoryTable } from './components/history-table.js';
@@ -16,7 +17,54 @@ import { exportResultsToJSON } from './utils/json-export.js';
 // Initialize database
 await initDatabase();
 
-// Initialize connection indicator
+/**
+ * Switches between views (Test and History)
+ * @param {string} viewName - The view to activate ('test' or 'history')
+ */
+function switchToView(viewName) {
+  const views = document.querySelectorAll('.app-view');
+  views.forEach(view => {
+    const isActive = view.id === `${viewName}-view`;
+    view.classList.toggle('app-view--active', isActive);
+    view.setAttribute('aria-hidden', !isActive);
+  });
+}
+
+/**
+ * Gets the initial view from URL hash or defaults to 'test'
+ * @returns {string} The initial view name
+ */
+function getInitialView() {
+  const hash = window.location.hash.slice(1);
+  return hash === 'history' ? 'history' : 'test';
+}
+
+// Initialize navigation
+const navigationContainer = document.getElementById('navigation-container');
+let navigation = null;
+
+if (navigationContainer) {
+  const initialView = getInitialView();
+
+  navigation = createNavigation(navigationContainer, {
+    initialView,
+    onViewChange: (newView) => {
+      switchToView(newView);
+    }
+  });
+
+  // Set initial view
+  switchToView(initialView);
+
+  // Handle browser back/forward buttons
+  window.addEventListener('popstate', () => {
+    const view = getInitialView();
+    navigation.setView(view);
+    switchToView(view);
+  });
+}
+
+// Initialize connection indicator (now in the navigation bar)
 const indicatorContainer = document.getElementById('connection-indicator-container');
 if (indicatorContainer) {
   const indicator = createConnectionIndicator(indicatorContainer);

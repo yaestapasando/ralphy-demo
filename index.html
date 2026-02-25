@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Test de Velocidad de Internet</title>
+  <link rel="stylesheet" href="/src/styles/main-layout.css">
   <link rel="stylesheet" href="/src/styles/history-table.css">
   <link rel="stylesheet" href="/src/styles/history-filters.css">
   <link rel="stylesheet" href="/src/styles/history-statistics.css">
@@ -24,294 +25,46 @@
       color: #1f2937;
     }
 
-    /* Header */
-    .app-header {
-      background: #ffffff;
-      border-bottom: 1px solid #e5e7eb;
-      padding: 1rem 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-    }
-
-    .app-header__title {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #1f2937;
-    }
-
-    /* Connection Indicator */
-    .connection-indicator {
-      position: relative;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 1rem;
-      background: #f3f4f6;
-      border-radius: 0.5rem;
-      transition: all 0.2s ease;
-    }
-
-    .connection-indicator__icon {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #6b7280;
-    }
-
-    .connection-indicator__label {
-      font-size: 0.875rem;
-      font-weight: 500;
-      color: #374151;
-    }
-
-    .connection-indicator__info {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #9ca3af;
-      cursor: pointer;
-      transition: color 0.2s ease;
-      outline: none;
-    }
-
-    .connection-indicator__info:hover,
-    .connection-indicator__info:focus {
-      color: #6b7280;
-    }
-
-    .connection-indicator__info:focus-visible {
-      outline: 2px solid #3b82f6;
-      outline-offset: 2px;
-      border-radius: 0.25rem;
-    }
-
-    .connection-indicator__tooltip {
-      position: absolute;
-      top: calc(100% + 0.5rem);
-      right: 0;
-      width: 300px;
-      padding: 0.75rem;
-      background: #1f2937;
-      color: #f9fafb;
-      font-size: 0.8125rem;
-      line-height: 1.5;
-      border-radius: 0.5rem;
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
-      z-index: 1000;
-      animation: tooltipFadeIn 0.2s ease;
-    }
-
-    .connection-indicator__tooltip::before {
-      content: '';
-      position: absolute;
-      bottom: 100%;
-      right: 1rem;
-      border: 0.5rem solid transparent;
-      border-bottom-color: #1f2937;
-    }
-
-    @keyframes tooltipFadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(-0.5rem);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    /* Connection type specific styles */
-    .connection-indicator--wifi {
-      background: #dbeafe;
-      border: 1px solid #93c5fd;
-    }
-
-    .connection-indicator--wifi .connection-indicator__icon {
-      color: #2563eb;
-    }
-
-    .connection-indicator--wifi .connection-indicator__label {
-      color: #1e40af;
-    }
-
-    .connection-indicator--cellular,
-    .connection-indicator--4g,
-    .connection-indicator--3g,
-    .connection-indicator--2g,
-    .connection-indicator--slow-2g {
-      background: #fef3c7;
-      border: 1px solid #fcd34d;
-    }
-
-    .connection-indicator--cellular .connection-indicator__icon,
-    .connection-indicator--4g .connection-indicator__icon,
-    .connection-indicator--3g .connection-indicator__icon,
-    .connection-indicator--2g .connection-indicator__icon,
-    .connection-indicator--slow-2g .connection-indicator__icon {
-      color: #d97706;
-    }
-
-    .connection-indicator--cellular .connection-indicator__label,
-    .connection-indicator--4g .connection-indicator__label,
-    .connection-indicator--3g .connection-indicator__label,
-    .connection-indicator--2g .connection-indicator__label,
-    .connection-indicator--slow-2g .connection-indicator__label {
-      color: #92400e;
-    }
-
-    .connection-indicator--ethernet {
-      background: #d1fae5;
-      border: 1px solid #6ee7b7;
-    }
-
-    .connection-indicator--ethernet .connection-indicator__icon {
-      color: #059669;
-    }
-
-    .connection-indicator--ethernet .connection-indicator__label {
-      color: #065f46;
-    }
-
-    .connection-indicator--bluetooth {
-      background: #e0e7ff;
-      border: 1px solid #c7d2fe;
-    }
-
-    .connection-indicator--bluetooth .connection-indicator__icon {
-      color: #4f46e5;
-    }
-
-    .connection-indicator--bluetooth .connection-indicator__label {
-      color: #3730a3;
-    }
-
-    .connection-indicator--none,
-    .connection-indicator--offline {
-      background: #fee2e2;
-      border: 1px solid #fca5a5;
-    }
-
-    .connection-indicator--none .connection-indicator__icon,
-    .connection-indicator--offline .connection-indicator__icon {
-      color: #dc2626;
-    }
-
-    .connection-indicator--none .connection-indicator__label,
-    .connection-indicator--offline .connection-indicator__label {
-      color: #991b1b;
-    }
-
-    .connection-indicator--unknown {
-      background: #f3f4f6;
-      border: 1px solid #d1d5db;
-    }
-
-    .connection-indicator--unknown .connection-indicator__icon {
-      color: #6b7280;
-    }
-
-    .connection-indicator--unknown .connection-indicator__label {
-      color: #4b5563;
-    }
-
-    /* Main Content */
-    .app-main {
-      max-width: 1200px;
-      margin: 2rem auto;
-      padding: 0 2rem;
-    }
-
-    /* History Section */
-    .history-section {
-      margin-top: 3rem;
-    }
-
-    .history-section__title {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #1f2937;
-      margin-bottom: 1.5rem;
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-      .app-header {
-        padding: 1rem;
-        flex-direction: column;
-        gap: 1rem;
-        align-items: flex-start;
-      }
-
-      .app-header__title {
-        font-size: 1.25rem;
-      }
-
-      .connection-indicator {
-        padding: 0.375rem 0.75rem;
-      }
-
-      .connection-indicator__label {
-        font-size: 0.8125rem;
-      }
-
-      .connection-indicator__tooltip {
-        width: 280px;
-        right: 0;
-        left: auto;
-      }
-
-      .connection-indicator__tooltip::before {
-        right: 1rem;
-        left: auto;
-      }
-
-      .app-main {
-        margin: 1rem auto;
-        padding: 0 1rem;
-      }
-
-      .history-section {
-        margin-top: 2rem;
-      }
-
-      .history-section__title {
-        font-size: 1.25rem;
-        margin-bottom: 1rem;
-      }
-    }
-
-    @media (max-width: 400px) {
-      .connection-indicator__tooltip {
-        width: calc(100vw - 2rem);
-        right: 0;
-        left: auto;
-      }
-    }
   </style>
 </head>
 <body>
-  <header class="app-header">
-    <h1 class="app-header__title">Test de Velocidad</h1>
-    <div id="connection-indicator-container"></div>
-  </header>
+  <div class="app-layout">
+    <!-- Navigation will be rendered here by JavaScript -->
+    <div id="navigation-container"></div>
 
-  <main class="app-main">
-    <!-- Speed test components will be rendered here -->
+    <!-- Main Content Area -->
+    <main class="app-content">
+      <!-- Test View -->
+      <section id="test-view" class="app-view test-view" role="tabpanel" aria-labelledby="test-tab">
+        <div class="test-view__header">
+          <h2 class="test-view__title">Test de Velocidad de Internet</h2>
+          <p class="test-view__subtitle">Mide la velocidad de tu conexión en segundos</p>
+        </div>
+        <div class="test-view__content">
+          <!-- Speed test components will be rendered here -->
+          <div id="speed-test-container"></div>
+        </div>
+      </section>
 
-    <!-- History section -->
-    <section class="history-section">
-      <h2 class="history-section__title">Histórico de Pruebas</h2>
-      <div id="history-filters-container"></div>
-      <div id="history-statistics-container"></div>
-      <div class="speed-chart">
-        <div id="speed-chart-container" class="speed-chart__container"></div>
-      </div>
-      <div id="history-table-container"></div>
-    </section>
-  </main>
+      <!-- History View -->
+      <section id="history-view" class="app-view history-view" role="tabpanel" aria-labelledby="history-tab">
+        <div class="history-view__header">
+          <h2 class="history-view__title">
+            <span class="history-view__title-icon" aria-hidden="true">📜</span>
+            <span>Histórico de Pruebas</span>
+          </h2>
+        </div>
+        <div class="history-view__content">
+          <div id="history-filters-container"></div>
+          <div id="history-statistics-container"></div>
+          <div class="speed-chart">
+            <div id="speed-chart-container" class="speed-chart__container"></div>
+          </div>
+          <div id="history-table-container"></div>
+        </div>
+      </section>
+    </main>
+  </div>
 
   <script type="module" src="/src/main.js"></script>
 </body>

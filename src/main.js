@@ -9,6 +9,7 @@ import { createHistoryFilters } from './components/history-filters.js';
 import { createHistoryTable } from './components/history-table.js';
 import { createSpeedChart } from './components/speed-chart.js';
 import { initDatabase } from './services/database.js';
+import { exportResultsToCSV } from './utils/csv-export.js';
 
 // Initialize database
 await initDatabase();
@@ -49,6 +50,16 @@ if (historyContainer) {
         historyTable.refresh();
         if (speedChart) {
           speedChart.update(historyTable.getResults());
+        }
+      },
+      onExportCSV: () => {
+        // Export current filtered results to CSV
+        const results = historyTable.getResults();
+        if (results.length > 0) {
+          exportResultsToCSV(results);
+        } else {
+          // Could show a notification that there are no results to export
+          console.warn('No results to export');
         }
       }
     });

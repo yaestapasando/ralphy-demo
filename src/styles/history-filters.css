@@ -139,7 +139,7 @@
 /* Buttons container */
 .history-filters__buttons {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 0.75rem;
 }
 
@@ -167,6 +167,38 @@
 
 .history-filters__clear-button:focus {
   outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Export CSV button */
+.history-filters__export-button {
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #ffffff;
+  background: #059669;
+  border: 1px solid #059669;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+}
+
+.history-filters__export-button:hover {
+  background: #047857;
+  border-color: #047857;
+}
+
+.history-filters__export-button:active {
+  background: #065f46;
+  border-color: #065f46;
+}
+
+.history-filters__export-button:focus {
+  outline: 2px solid #059669;
   outline-offset: 2px;
 }
 
@@ -223,8 +255,12 @@
   }
 
   .history-filters__buttons {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 0.75rem;
+  }
+
+  .history-filters__clear-button {
+    grid-column: 1 / -1;
   }
 }
 
@@ -258,6 +294,7 @@
   }
 
   .history-filters__clear-button,
+  .history-filters__export-button,
   .history-filters__delete-all-button {
     padding: 0.75rem 1rem;
     font-size: 1rem;
@@ -268,7 +305,9 @@
 @media (prefers-reduced-motion: reduce) {
   .history-filters__checkbox-label,
   .history-filters__date-input,
-  .history-filters__clear-button {
+  .history-filters__clear-button,
+  .history-filters__export-button,
+  .history-filters__delete-all-button {
     transition: none;
   }
 }

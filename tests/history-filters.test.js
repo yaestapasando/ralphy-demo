@@ -577,6 +577,59 @@ describe('history-filters component', () => {
   });
 
   // ===========================================================================
+  // Export CSV functionality
+  // ===========================================================================
+
+  describe('export CSV functionality', () => {
+    it('displays export CSV button', () => {
+      createHistoryFilters(container);
+      const exportButton = container.querySelector('.history-filters__export-button');
+      expect(exportButton).not.toBeNull();
+      expect(exportButton.textContent).toContain('Exportar a CSV');
+    });
+
+    it('export button has correct accessibility attributes', () => {
+      createHistoryFilters(container);
+      const exportButton = container.querySelector('.history-filters__export-button');
+      expect(exportButton.getAttribute('aria-label')).toBe('Exportar histórico a CSV');
+    });
+
+    it('calls onExportCSV callback when export button is clicked', () => {
+      const onExportCSV = vi.fn();
+      createHistoryFilters(container, { onExportCSV });
+
+      const exportButton = container.querySelector('.history-filters__export-button');
+      exportButton.click();
+
+      expect(onExportCSV).toHaveBeenCalled();
+    });
+
+    it('does not throw error when onExportCSV is not provided', () => {
+      createHistoryFilters(container);
+      const exportButton = container.querySelector('.history-filters__export-button');
+
+      expect(() => exportButton.click()).not.toThrow();
+    });
+
+    it('export button is always enabled regardless of filters', () => {
+      const filters = createHistoryFilters(container);
+      const exportButton = container.querySelector('.history-filters__export-button');
+
+      // Initially enabled
+      expect(exportButton.disabled).toBe(false);
+
+      // Still enabled after setting filters
+      filters.setFilters({
+        connectionTypes: ['wifi'],
+        dateFrom: '2026-02-01',
+        dateTo: '2026-02-28'
+      });
+
+      expect(exportButton.disabled).toBe(false);
+    });
+  });
+
+  // ===========================================================================
   // Integration scenarios
   // ===========================================================================
 

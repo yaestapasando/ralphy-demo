@@ -72,6 +72,7 @@ function formatDateForInput(date) {
  * @param {HTMLElement} container - Container element
  * @param {Object} options - Configuration options
  * @param {Function} options.onFilterChange - Callback when filters change
+ * @param {Function} options.onExportCSV - Callback when export to CSV is requested
  * @returns {Object} History filters API
  */
 export function createHistoryFilters(container, options = {}) {
@@ -79,7 +80,7 @@ export function createHistoryFilters(container, options = {}) {
     throw new Error('Container element is required');
   }
 
-  const { onFilterChange, onClearAll } = options;
+  const { onFilterChange, onClearAll, onExportCSV } = options;
 
   let selectedConnectionTypes = [];
   let dateFrom = null;
@@ -244,6 +245,14 @@ export function createHistoryFilters(container, options = {}) {
       emitFilterChange();
     });
 
+    // Export CSV button
+    const exportButton = document.createElement('button');
+    exportButton.type = 'button';
+    exportButton.className = 'history-filters__export-button';
+    exportButton.textContent = '📥 Exportar a CSV';
+    exportButton.setAttribute('aria-label', 'Exportar histórico a CSV');
+    exportButton.addEventListener('click', handleExportCSV);
+
     // Delete all button
     const deleteAllButton = document.createElement('button');
     deleteAllButton.type = 'button';
@@ -253,6 +262,7 @@ export function createHistoryFilters(container, options = {}) {
     deleteAllButton.addEventListener('click', handleDeleteAll);
 
     buttonsContainer.appendChild(clearButton);
+    buttonsContainer.appendChild(exportButton);
     buttonsContainer.appendChild(deleteAllButton);
 
     // Append all sections
@@ -329,6 +339,16 @@ export function createHistoryFilters(container, options = {}) {
         }
       }
     });
+  }
+
+  /**
+   * Handle export to CSV action
+   * Calls the parent component callback to get the data and export it
+   */
+  function handleExportCSV() {
+    if (typeof onExportCSV === 'function') {
+      onExportCSV();
+    }
   }
 
   /**

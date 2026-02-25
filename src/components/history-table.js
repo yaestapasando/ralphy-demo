@@ -303,6 +303,7 @@ export function createHistoryTable(container) {
   };
   let tableElement = null;
   let emptyStateElement = null;
+  let changeCallback = null;
 
   /**
    * Handle delete action for a result
@@ -321,6 +322,10 @@ export function createHistoryTable(container) {
         try {
           await deleteResult(result.id);
           await render(); // Re-render table after deletion
+          // Notify change callback if registered
+          if (changeCallback) {
+            changeCallback(filteredResults);
+          }
         } catch (error) {
           console.error('Error deleting result:', error);
           // Could show an error notification here
@@ -405,6 +410,10 @@ export function createHistoryTable(container) {
   async function setFilters(filters) {
     currentFilters = { ...currentFilters, ...filters };
     await render();
+    // Notify change callback if registered
+    if (changeCallback) {
+      changeCallback(filteredResults);
+    }
   }
 
   /**
@@ -425,6 +434,18 @@ export function createHistoryTable(container) {
       dateTo: null
     };
     await render();
+    // Notify change callback if registered
+    if (changeCallback) {
+      changeCallback(filteredResults);
+    }
+  }
+
+  /**
+   * Register a callback to be called when results change
+   * @param {Function} callback - Callback function to be called with filtered results
+   */
+  function onChange(callback) {
+    changeCallback = callback;
   }
 
   // Initial render
@@ -438,6 +459,7 @@ export function createHistoryTable(container) {
     getAllResultsUnfiltered,
     setFilters,
     getFilters,
-    clearFilters
+    clearFilters,
+    onChange
   };
 }

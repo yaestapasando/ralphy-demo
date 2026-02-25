@@ -7,6 +7,7 @@
 import { createConnectionIndicator } from './components/connection-indicator.js';
 import { createHistoryFilters } from './components/history-filters.js';
 import { createHistoryTable } from './components/history-table.js';
+import { createHistoryStatistics } from './components/history-statistics.js';
 import { createSpeedChart } from './components/speed-chart.js';
 import { initDatabase } from './services/database.js';
 import { exportResultsToCSV } from './utils/csv-export.js';
@@ -30,10 +31,24 @@ if (chartContainer) {
   speedChart = createSpeedChart(chartContainer);
 }
 
+// Initialize history statistics
+const statisticsContainer = document.getElementById('history-statistics-container');
+let historyStatistics = null;
+if (statisticsContainer) {
+  historyStatistics = createHistoryStatistics(statisticsContainer);
+}
+
 // Initialize history table
 const historyContainer = document.getElementById('history-table-container');
 if (historyContainer) {
   const historyTable = createHistoryTable(historyContainer);
+
+  // Register callback to update statistics when table data changes
+  historyTable.onChange((results) => {
+    if (historyStatistics) {
+      historyStatistics.update(results);
+    }
+  });
 
   // Initialize history filters
   const filtersContainer = document.getElementById('history-filters-container');
@@ -41,14 +56,20 @@ if (historyContainer) {
     createHistoryFilters(filtersContainer, {
       onFilterChange: (filters) => {
         historyTable.setFilters(filters);
-        // Update chart with filtered results
+        // Update statistics and chart with filtered results
+        if (historyStatistics) {
+          historyStatistics.update(historyTable.getResults());
+        }
         if (speedChart) {
           speedChart.update(historyTable.getResults());
         }
       },
       onClearAll: () => {
-        // Refresh table and chart after clearing all history
+        // Refresh table, statistics and chart after clearing all history
         historyTable.refresh();
+        if (historyStatistics) {
+          historyStatistics.update(historyTable.getResults());
+        }
         if (speedChart) {
           speedChart.update(historyTable.getResults());
         }
@@ -76,12 +97,16 @@ if (historyContainer) {
     });
   }
 
-  // Update chart with initial data
+  // Update statistics and chart with initial data
+  if (historyStatistics) {
+    historyStatistics.update(historyTable.getResults());
+  }
   if (speedChart) {
     speedChart.update(historyTable.getResults());
   }
 
   // Make it globally accessible for refreshing after new tests
   window.historyTable = historyTable;
+  window.historyStatistics = historyStatistics;
   window.speedChart = speedChart;
 }

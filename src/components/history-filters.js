@@ -73,6 +73,7 @@ function formatDateForInput(date) {
  * @param {Object} options - Configuration options
  * @param {Function} options.onFilterChange - Callback when filters change
  * @param {Function} options.onExportCSV - Callback when export to CSV is requested
+ * @param {Function} options.onExportJSON - Callback when export to JSON is requested
  * @returns {Object} History filters API
  */
 export function createHistoryFilters(container, options = {}) {
@@ -80,7 +81,7 @@ export function createHistoryFilters(container, options = {}) {
     throw new Error('Container element is required');
   }
 
-  const { onFilterChange, onClearAll, onExportCSV } = options;
+  const { onFilterChange, onClearAll, onExportCSV, onExportJSON } = options;
 
   let selectedConnectionTypes = [];
   let dateFrom = null;
@@ -246,12 +247,20 @@ export function createHistoryFilters(container, options = {}) {
     });
 
     // Export CSV button
-    const exportButton = document.createElement('button');
-    exportButton.type = 'button';
-    exportButton.className = 'history-filters__export-button';
-    exportButton.textContent = '📥 Exportar a CSV';
-    exportButton.setAttribute('aria-label', 'Exportar histórico a CSV');
-    exportButton.addEventListener('click', handleExportCSV);
+    const exportCSVButton = document.createElement('button');
+    exportCSVButton.type = 'button';
+    exportCSVButton.className = 'history-filters__export-button';
+    exportCSVButton.textContent = '📥 Exportar a CSV';
+    exportCSVButton.setAttribute('aria-label', 'Exportar histórico a CSV');
+    exportCSVButton.addEventListener('click', handleExportCSV);
+
+    // Export JSON button
+    const exportJSONButton = document.createElement('button');
+    exportJSONButton.type = 'button';
+    exportJSONButton.className = 'history-filters__export-button';
+    exportJSONButton.textContent = '📥 Exportar a JSON';
+    exportJSONButton.setAttribute('aria-label', 'Exportar histórico a JSON');
+    exportJSONButton.addEventListener('click', handleExportJSON);
 
     // Delete all button
     const deleteAllButton = document.createElement('button');
@@ -262,7 +271,8 @@ export function createHistoryFilters(container, options = {}) {
     deleteAllButton.addEventListener('click', handleDeleteAll);
 
     buttonsContainer.appendChild(clearButton);
-    buttonsContainer.appendChild(exportButton);
+    buttonsContainer.appendChild(exportCSVButton);
+    buttonsContainer.appendChild(exportJSONButton);
     buttonsContainer.appendChild(deleteAllButton);
 
     // Append all sections
@@ -348,6 +358,16 @@ export function createHistoryFilters(container, options = {}) {
   function handleExportCSV() {
     if (typeof onExportCSV === 'function') {
       onExportCSV();
+    }
+  }
+
+  /**
+   * Handle export to JSON action
+   * Calls the parent component callback to get the data and export it
+   */
+  function handleExportJSON() {
+    if (typeof onExportJSON === 'function') {
+      onExportJSON();
     }
   }
 

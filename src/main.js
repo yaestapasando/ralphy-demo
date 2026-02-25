@@ -10,6 +10,7 @@ import { createHistoryTable } from './components/history-table.js';
 import { createSpeedChart } from './components/speed-chart.js';
 import { initDatabase } from './services/database.js';
 import { exportResultsToCSV } from './utils/csv-export.js';
+import { exportResultsToJSON } from './utils/json-export.js';
 
 // Initialize database
 await initDatabase();
@@ -57,6 +58,16 @@ if (historyContainer) {
         const results = historyTable.getResults();
         if (results.length > 0) {
           exportResultsToCSV(results);
+        } else {
+          // Could show a notification that there are no results to export
+          console.warn('No results to export');
+        }
+      },
+      onExportJSON: () => {
+        // Export current filtered results to JSON
+        const results = historyTable.getResults();
+        if (results.length > 0) {
+          exportResultsToJSON(results);
         } else {
           // Could show a notification that there are no results to export
           console.warn('No results to export');
